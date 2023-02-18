@@ -1,7 +1,7 @@
 const express = require('express')
 const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
-const connection = require('./utils/db')
+const connection = require('./utils/dbConnection')
 const validateJWT = require('./utils/validateJWT')
 
 
@@ -22,5 +22,6 @@ function startExpress() {
     const app = express()
     app.listen(4000)
 
+    app.use('/submission', require('./routers/Submission.router'))
 
 }
