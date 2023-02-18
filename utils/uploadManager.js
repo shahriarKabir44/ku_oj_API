@@ -1,20 +1,26 @@
-const fs = require('fs')
 const multer = require('multer')
 
-const storage = multer.diskStorage({})
+
+
+
+
+const fs = require('fs')
+const storage = multer.diskStorage({
+    destination: (req, res, cb) => {
+        const { uploadpath, postedby, problemid } = req.headers
+        if (!fs.existsSync(`executors/submissions/${uploadpath}/${postedby}/${problemid}`)) {
+            fs.mkdirSync(`executors/submissions/${uploadpath}/${postedby}/${problemid}`, { recursive: true });
+        }
+        return cb(null, `executors/submissions/${uploadpath}/${postedby}/${problemid}`)
+
+    },
+    filename: (req, res, cb) => {
+        const { ext } = req.headers
+        //req.postDir = `/ posts / ${postedby} / ${postid} / ${index}.jpg`
+        cb(null, `ppp.${ext}`)
+    }
+})
 
 const upload = multer({ storage })
 
-function uploader(req, res) {
-    const { uploadpath, filename } = req.headers
-    return new Promise((resolve, reject) => {
-        if (!fs.existsSync('executors/submissions/' + uploadpath)) {
-            fs.mkdirSync('executors/submissions/' + uploadpath, { recursive: true });
-        }
-        let base64Image = req.body.file.split(';base64,').pop();
-        fs.writeFile('executors/submissions/' + uploadpath + filename + '.py', base64Image, { encoding: 'base64' }, function (err) {
-            resolve()
-        });
-    })
-}
-module.exports = { upload, uploader };
+module.exports = { upload };

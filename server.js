@@ -21,7 +21,8 @@ if (cluster.isMaster) {
 function startExpress() {
     const app = express()
     app.listen(4000)
-
+    app.use(require('cors')())
+    app.use(express.json())
     app.use('/submission', require('./routers/Submission.router'))
 
 }
