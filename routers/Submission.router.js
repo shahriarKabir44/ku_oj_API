@@ -1,10 +1,15 @@
 const SubmissionRouter = require('express').Router()
 
-const { upload, uploader } = require('../utils/uploadManager')
-
+const { upload } = require('../utils/uploadManager')
+const runPython = require('../executors/runPython')
 
 SubmissionRouter.post('/upload', upload.single('file'), (req, res) => {
-    res.send("abcd")
+
+    runPython(1, '/pp/11/ppp.py')
+        .then(data => {
+            console.log(data, 'nigger')
+            res.send({ data })
+        })
 })
 
 

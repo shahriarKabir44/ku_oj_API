@@ -16,11 +16,27 @@ const { exec, spawn } = require("child_process");
 //     });
 //     console.log(`stdout: ${stdout}`);
 // });
+module.exports = function (problemId, filePath) {
+    console.log(__dirname + filePath)
+    return new Promise((resolve, reject) => {
 
-const child = spawn("python", ['cp.py']);
-child.stdin.write("4");
-child.stdin.end();
-child.stdout.on("data", (data) => {
-    console.log(`child stdout:\n${data}`);
-});
+        try {
+            const child = spawn("python", [__dirname + '/submissions' + filePath]);
+            child.on('error', (e) => {
+                console.log(error)
+            })
+            child.stdin.write("4");
+            child.stdin.end();
+            child.stdout.on("data", (data) => {
+
+                resolve(data.toString())
+            });
+        } catch (error) {
+
+        }
+
+    })
+
+}
+
 
