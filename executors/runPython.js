@@ -39,30 +39,38 @@ async function execInput(processChild, args) {
     })
 }
 module.exports = function (problemId, filePath) {
-    const testCaseFile = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
-    let outputs = []
+
     return new Promise((resolve, reject) => {
 
         try {
+            const testcases = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
+            const expectedOutputs = readFileLines(`${__dirname}/files/testcases/${problemId}/out.txt`)
+            let outputs = []
             const child = spawn("python", [__dirname + filePath]);
             child.on('error', (e) => {
                 console.log(error, "here")
             })
             let promises = []
-            testCaseFile.forEach(testcase => {
+            testcases.forEach((testcase, index) => {
                 promises.push(execInput(child, testcase)
                     .then(data => {
-                        outputs.push(data)
+                        outputs.push([data, index])
                     }))
             })
             Promise.all(promises).then(() => {
-                resolve(outputs)
+                outputs.sort((a, b) => a[1] - b[1])
+                for (let n = 0; n < outputs.length; n++) {
+                    if (outputs[n][0] != expectedOutputs[n]) {
+                        resolve(false)
+                    }
+                }
+                resolve(true)
             })
 
 
 
         } catch (error) {
-
+            console.log(error)
         }
 
     })

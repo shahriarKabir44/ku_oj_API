@@ -33,7 +33,7 @@ const storage = multer.diskStorage({
             const { submissionid } = req.headers
             filename = submissionid
         }
-        else if (filetype == 'testcaseoutput') {
+        else if (filetype == 'testcaseinput') {
 
             filename = 'out'
         }
