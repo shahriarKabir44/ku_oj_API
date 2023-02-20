@@ -1,4 +1,5 @@
 const { exec, spawn } = require("child_process");
+const fs = require('fs')
 // exec("g++ a.cpp -o a", (error, stdout, stderr) => {
 //     if (error) {
 //         console.log(`error: ${error.message}`);
@@ -16,8 +17,15 @@ const { exec, spawn } = require("child_process");
 //     });
 //     console.log(`stdout: ${stdout}`);
 // });
+// Intitializing the readFileLines with the file
+const readFileLines = filename =>
+    fs.readFileSync(filename)
+        .toString('UTF8')
+        .split('\n');
 module.exports = function (problemId, filePath) {
-    console.log(__dirname + filePath)
+    const testCaseFile = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
+    let outputs = []
+    console.log(filePath)
     return new Promise((resolve, reject) => {
 
         try {
@@ -25,12 +33,17 @@ module.exports = function (problemId, filePath) {
             child.on('error', (e) => {
                 console.log(error)
             })
-            child.stdin.write("4");
+            //testCaseFile.forEach(testcase => {
+            //console.log(testcase)
+            child.stdin.write('12');
             child.stdin.end();
             child.stdout.on("data", (data) => {
-
-                resolve(data.toString())
+                console.log(data.toString())
+                outputs.push(data.toString())
             });
+            //})
+            resolve(outputs)
+
         } catch (error) {
 
         }

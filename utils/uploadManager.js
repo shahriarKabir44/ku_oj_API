@@ -7,17 +7,39 @@ const multer = require('multer')
 const fs = require('fs')
 const storage = multer.diskStorage({
     destination: (req, res, cb) => {
-        const { uploadpath, postedby, problemid } = req.headers
-        if (!fs.existsSync(`executors/submissions/${uploadpath}/${postedby}/${problemid}`)) {
-            fs.mkdirSync(`executors/submissions/${uploadpath}/${postedby}/${problemid}`, { recursive: true });
+        const { filetype, problemid } = req.headers
+        let path = 'executors/files'
+        if (filetype == 'submission') {
+
+            path += `/submissions/${postedby}/${problemid}`
         }
-        return cb(null, `executors/submissions/${uploadpath}/${postedby}/${problemid}`)
+        else if (filetype == 'testcaseoutput' || filetype == 'testcaseinput') {
+            path += `/testcases/${problemid}`
+        }
+        if (!fs.existsSync(path)) {
+            fs.mkdirSync(path, { recursive: true });
+        }
+        req.fileDir = path
+        return cb(null, path)
 
     },
     filename: (req, res, cb) => {
-        const { ext } = req.headers
-        //req.postDir = `/ posts / ${postedby} / ${postid} / ${index}.jpg`
-        cb(null, `ppp.${ext}`)
+        const { filetype, ext } = req.headers
+        let filename = ""
+        if (filetype == 'submission') {
+            const { submissionid } = req.headers
+            filename = submissionid
+        }
+        else if (filetype == 'testcaseoutput') {
+
+            filename = 'out'
+        }
+        else if (filetype == 'testcaseoutput') {
+
+            filename = 'in'
+        }
+        req.filename = `${filename}.${ext}`
+        cb(null, `${filename}.${ext}`)
     }
 })
 
