@@ -9,17 +9,20 @@ const storage = multer.diskStorage({
     destination: (req, res, cb) => {
         const { filetype, problemid } = req.headers
         let path = 'executors/files'
+        let tempPath = '/files'
         if (filetype == 'submission') {
-
+            const { postedby } = req.headers
             path += `/submissions/${postedby}/${problemid}`
+            tempPath += `/submissions/${postedby}/${problemid}`
         }
         else if (filetype == 'testcaseoutput' || filetype == 'testcaseinput') {
             path += `/testcases/${problemid}`
+            tempPath += `/testcases/${problemid}`
         }
         if (!fs.existsSync(path)) {
             fs.mkdirSync(path, { recursive: true });
         }
-        req.fileDir = path
+        req.fileDir = tempPath
         return cb(null, path)
 
     },

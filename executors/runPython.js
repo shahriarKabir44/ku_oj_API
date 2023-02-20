@@ -22,27 +22,44 @@ const readFileLines = filename =>
     fs.readFileSync(filename)
         .toString('UTF8')
         .split('\n');
+
+async function execInput(processChild, args) {
+    return new Promise((resolve, reject) => {
+        try {
+            processChild.stdin.write(args);
+            processChild.stdin.end();
+            processChild.stdout.on("data", (data) => {
+                let val = data.toString().replace('\n', '')
+                resolve(val)
+            });
+        } catch (error) {
+
+        }
+
+    })
+}
 module.exports = function (problemId, filePath) {
     const testCaseFile = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
     let outputs = []
-    console.log(filePath)
     return new Promise((resolve, reject) => {
 
         try {
-            const child = spawn("python", [__dirname + '/submissions' + filePath]);
+            const child = spawn("python", [__dirname + filePath]);
             child.on('error', (e) => {
-                console.log(error)
+                console.log(error, "here")
             })
-            //testCaseFile.forEach(testcase => {
-            //console.log(testcase)
-            child.stdin.write('12');
-            child.stdin.end();
-            child.stdout.on("data", (data) => {
-                console.log(data.toString())
-                outputs.push(data.toString())
-            });
-            //})
-            resolve(outputs)
+            let promises = []
+            testCaseFile.forEach(testcase => {
+                promises.push(execInput(child, testcase)
+                    .then(data => {
+                        outputs.push(data)
+                    }))
+            })
+            Promise.all(promises).then(() => {
+                resolve(outputs)
+            })
+
+
 
         } catch (error) {
 
