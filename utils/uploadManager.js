@@ -35,11 +35,11 @@ const storage = multer.diskStorage({
         }
         else if (filetype == 'testcaseinput') {
 
-            filename = 'out'
+            filename = 'in'
         }
         else if (filetype == 'testcaseoutput') {
 
-            filename = 'in'
+            filename = 'out'
         }
         req.filename = `${filename}.${ext}`
         cb(null, `${filename}.${ext}`)

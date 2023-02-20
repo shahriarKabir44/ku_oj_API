@@ -21,15 +21,17 @@ const fs = require('fs')
 const readFileLines = filename =>
     fs.readFileSync(filename)
         .toString('UTF8')
-        .split('\n');
+
 
 async function execInput(processChild, args) {
     return new Promise((resolve, reject) => {
         try {
             processChild.stdin.write(args);
+            //processChild.stdin.write("1");
             processChild.stdin.end();
             processChild.stdout.on("data", (data) => {
-                let val = data.toString().replace('\n', '')
+                let val = data.toString().split('\n').filter(e => e != '')
+
                 resolve(val)
             });
         } catch (error) {
@@ -44,33 +46,30 @@ module.exports = function (problemId, filePath) {
 
         try {
             const testcases = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
-            const expectedOutputs = readFileLines(`${__dirname}/files/testcases/${problemId}/out.txt`)
+            const expectedOutputs = readFileLines(`${__dirname}/files/testcases/${problemId}/out.txt`).split('\n')
             let outputs = []
+            console.log(expectedOutputs)
             const child = spawn("python", [__dirname + filePath]);
             child.on('error', (e) => {
                 console.log(error, "here")
             })
             let promises = []
-            testcases.forEach((testcase, index) => {
-                promises.push(execInput(child, testcase)
-                    .then(data => {
-                        outputs.push([data, index])
-                    }))
-            })
-            Promise.all(promises).then(() => {
-                outputs.sort((a, b) => a[1] - b[1])
-                for (let n = 0; n < outputs.length; n++) {
-                    if (outputs[n][0] != expectedOutputs[n]) {
-                        resolve(false)
+            execInput(child, testcases)
+                .then(data => {
+                    outputs.push(data)
+                    for (let n = 0; n < data.length; n++) {
+                        if (data[n] != expectedOutputs[n]) {
+                            resolve(false)
+                        }
                     }
-                }
-                resolve(true)
-            })
+                    resolve(true)
+                })
+
 
 
 
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
 
     })
