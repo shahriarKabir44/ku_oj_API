@@ -1,4 +1,4 @@
-const connection = require('./db')
+const connection = require('./dbConnection')
 
 module.exports = function ({ sql, values }) {
     return new Promise(function (resolve, reject) {

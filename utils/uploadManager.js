@@ -1,9 +1,5 @@
 const multer = require('multer')
 
-
-
-
-
 const fs = require('fs')
 const storage = multer.diskStorage({
     destination: (req, res, cb) => {
@@ -19,6 +15,11 @@ const storage = multer.diskStorage({
             path += `/testcases/${problemid}`
             tempPath += `/testcases/${problemid}`
         }
+        else if (filetype == 'statementfile') {
+            path += `/statements/${problemid}`
+            tempPath += `/statements/${problemid}`
+        }
+
         if (!fs.existsSync(path)) {
             fs.mkdirSync(path, { recursive: true });
         }
@@ -37,9 +38,13 @@ const storage = multer.diskStorage({
 
             filename = 'in'
         }
+
         else if (filetype == 'testcaseoutput') {
 
             filename = 'out'
+        }
+        else if (filetype == 'statementfile') {
+            filename = 'statement'
         }
         req.filename = `${filename}.${ext}`
         cb(null, `${filename}.${ext}`)
