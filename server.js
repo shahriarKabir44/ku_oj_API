@@ -20,9 +20,10 @@ if (cluster.isMaster) {
 }
 function startExpress() {
     const app = express()
-    app.listen(4000)
+    app.listen(8080)
     app.use(require('cors')())
     app.use(express.json())
 
     app.use('/uploadFile', require('./routers/Upload.router'))
+    app.use('/contests', require('./routers/Contest.router'))
 }
