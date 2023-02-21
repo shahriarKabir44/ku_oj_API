@@ -14,6 +14,7 @@ ContestRouter.post('/createProblem', (req, res) => {
 })
 
 ContestRouter.post('/setProblemFilesURL', (req, res) => {
+    console.log(req.body)
     ContestRepository.setProblemFilesURL(req.body)
         .then(() => {
             res.send({ success: 1 })
