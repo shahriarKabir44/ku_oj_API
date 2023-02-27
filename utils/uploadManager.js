@@ -16,8 +16,8 @@ const storage = multer.diskStorage({
             tempPath += `/testcases/${problemid}`
         }
         else if (filetype == 'statementfile') {
-            path += `/statements/${problemid}`
-            tempPath += `/statements/${problemid}`
+            path = `problemStatements/`
+            tempPath += `problemStatements/`
         }
 
         if (!fs.existsSync(path)) {
@@ -44,7 +44,8 @@ const storage = multer.diskStorage({
             filename = 'out'
         }
         else if (filetype == 'statementfile') {
-            filename = 'statement'
+            const { problemid } = req.headers
+            filename = problemid
         }
         req.filename = `${filename}.${ext}`
         cb(null, `${filename}.${ext}`)

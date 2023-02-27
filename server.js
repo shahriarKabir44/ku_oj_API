@@ -23,7 +23,7 @@ function startExpress() {
     app.listen(8080)
     app.use(require('cors')())
     app.use(express.json())
-
+    app.use(express.static(__dirname + '/problemStatements'))
     app.use('/uploadFile', require('./routers/Upload.router'))
     app.use('/contests', require('./routers/Contest.router'))
 }
