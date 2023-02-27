@@ -7,7 +7,6 @@ SubmissionRouter.post('/upload', upload.single('file'), (req, res) => {
 
     runPython(1, '/pp/11/ppp.py')
         .then(data => {
-            console.log(data, 'nigger')
             res.send({ data })
         })
 })

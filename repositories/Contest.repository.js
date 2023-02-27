@@ -4,18 +4,27 @@ const QueryBuilder = require('../utils/queryBuilder')
 
 
 module.exports = class ContestRepository {
-    static async createContest() {
-
-    }
-    static async createProblem({ contestId, authorId, title, point }) {
+    static async createContest({ title, startTime, endTime, hostId }) {
         await Promisify({
-            sql: QueryBuilder.insertQuery('problem', ['contestId', 'authorId', 'title', 'point']),
-            values: [contestId, authorId, title, point]
+            sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId']),
+            values: [title, startTime, endTime, hostId]
+        })
+        let [{ contestId }] = await Promisify({
+            sql: `select max(id) as contestId from contest where 
+                hostId=?  ;`,
+            values: [hostId]
+        })
+        return contestId
+    }
+    static async createProblem({ contestId, title, point }) {
+        await Promisify({
+            sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'point']),
+            values: [contestId, title, point]
         })
         let [{ newId }] = await Promisify({
             sql: `select max(id) as newId from problem where 
-                authorId=? and contestId=?;`,
-            values: [authorId, contestId]
+                  contestId=?;`,
+            values: [contestId]
         })
         return newId
     }

@@ -3,7 +3,10 @@ const ContestRepository = require('../repositories/Contest.repository')
 const ContestRouter = require('express').Router()
 
 ContestRouter.post('/createContest', (req, res) => {
-
+    ContestRepository.createContest(req.body)
+        .then(contestId => {
+            res.send({ contestId })
+        })
 })
 
 ContestRouter.post('/createProblem', (req, res) => {
@@ -14,7 +17,6 @@ ContestRouter.post('/createProblem', (req, res) => {
 })
 
 ContestRouter.post('/setProblemFilesURL', (req, res) => {
-    console.log(req.body)
     ContestRepository.setProblemFilesURL(req.body)
         .then(() => {
             res.send({ success: 1 })
