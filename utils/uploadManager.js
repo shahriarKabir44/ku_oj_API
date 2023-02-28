@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
         }
         else if (filetype == 'statementfile') {
             path = `problemStatements/`
-            tempPath = `problemStatements/`
+            tempPath = ``
         }
 
         if (!fs.existsSync(path)) {

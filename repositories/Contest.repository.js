@@ -12,6 +12,13 @@ module.exports = class ContestRepository {
             values: []
         })
     }
+    static async getProblemInfo({ id }) {
+        let [problemInfo] = await Promisify({
+            sql: `select * from problem where id=?`,
+            values: [id]
+        })
+        return problemInfo
+    }
     static async getContestProblems({ id }) {
         return Promisify({
             sql: `SELECT * from problem WHERE
