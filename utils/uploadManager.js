@@ -7,9 +7,9 @@ const storage = multer.diskStorage({
         let path = 'executors/files'
         let tempPath = '/files'
         if (filetype == 'submission') {
-            const { postedby } = req.headers
-            path += `/submissions/${postedby}/${problemid}`
-            tempPath += `/submissions/${postedby}/${problemid}`
+            const { postedby, contestid } = req.headers
+            path += `/submissions/${contestid}/${postedby}/${problemid}`
+            tempPath += `/submissions/${contestid}/${postedby}/${problemid}`
         }
         else if (filetype == 'testcaseoutput' || filetype == 'testcaseinput') {
             path += `/testcases/${problemid}`
