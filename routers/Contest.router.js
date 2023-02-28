@@ -8,7 +8,12 @@ ContestRouter.post('/createContest', (req, res) => {
             res.send({ contestId })
         })
 })
-
+ContestRouter.get('/getContests', (req, res) => {
+    ContestRepository.getContests()
+        .then(contests => {
+            res.send({ contests })
+        })
+})
 ContestRouter.post('/createProblem', (req, res) => {
     ContestRepository.createProblem(req.body)
         .then(problemId => {
@@ -20,6 +25,18 @@ ContestRouter.post('/setProblemFilesURL', (req, res) => {
     ContestRepository.setProblemFilesURL(req.body)
         .then(() => {
             res.send({ success: 1 })
+        })
+})
+ContestRouter.get('/getContestProblems/:id', (req, res) => {
+    ContestRepository.getContestProblems(req.params)
+        .then(contestProblems => {
+            res.send({ contestProblems })
+        })
+})
+ContestRouter.get('/getContestInfo/:id', (req, res) => {
+    ContestRepository.getContestInfo(req.params)
+        .then(contestInfo => {
+            res.send({ contestInfo })
         })
 })
 

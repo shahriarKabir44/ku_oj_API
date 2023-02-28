@@ -4,6 +4,21 @@ const QueryBuilder = require('../utils/queryBuilder')
 
 
 module.exports = class ContestRepository {
+    static async getContests() {
+        return Promisify({
+            sql: `SELECT id,startTime,endTime,title,hostId, 
+                (select userName from user WHERE user.id=hostId) 
+                as hostName from contest;`,
+            values: []
+        })
+    }
+    static async getContestProblems({ id }) {
+        return Promisify({
+            sql: `SELECT * from problem WHERE
+                    problem.contestId=?;`,
+            values: [id]
+        })
+    }
     static async createContest({ title, startTime, endTime, hostId }) {
         await Promisify({
             sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId']),
@@ -34,5 +49,23 @@ module.exports = class ContestRepository {
                 where id=?;`,
             values: [statementFileURL, testcaseFileURL, outputFileURL, problemId]
         })
+    }
+    static async getContestInfo({ id }) {
+        let [contest] = await Promisify({
+            sql: `SELECT
+                    id,
+                    startTime,
+                    endTime,
+                    title,
+                    hostId, (
+                        select userName
+                        from user
+                        WHERE
+                            user.id = hostId
+                    ) as hostName
+                from contest WHERE id=?;`,
+            values: [id]
+        })
+        return contest
     }
 }
