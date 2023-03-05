@@ -27,13 +27,19 @@ async function execInput(processChild, args) {
     return new Promise((resolve, reject) => {
         try {
             processChild.stdin.write(args);
+            let isExecutionCompleted = false
             //processChild.stdin.write("1");
             processChild.stdin.end();
             processChild.stdout.on("data", (data) => {
+                isExecutionCompleted = true
                 let val = data.toString().split('\n').filter(e => e != '')
 
                 resolve(val)
             });
+            setTimeout(() => {
+                processChild.stdin.write("^c");
+                resolve(false)
+            }, 1000);
         } catch (error) {
 
         }
