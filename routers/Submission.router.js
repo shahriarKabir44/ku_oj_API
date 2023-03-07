@@ -21,5 +21,13 @@ SubmissionRouter.post('/getPreviousSubmissions', (req, res) => {
         })
 })
 
+SubmissionRouter.get('/getSubmissionInfo/:id', (req, res) => {
+    SubmissionRepository.getSubmissionInfo(req.params)
+        .then(submissionInfo => {
+            res.send({ submissionInfo })
+        })
+
+})
+
 
 module.exports = SubmissionRouter
