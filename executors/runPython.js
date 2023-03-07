@@ -26,19 +26,37 @@ const readFileLines = filename =>
 async function execInput(processChild, args) {
     return new Promise((resolve, reject) => {
         try {
+            let begin = new Date()
+
             processChild.stdin.write(args);
             let isExecutionCompleted = false
             //processChild.stdin.write("1");
             processChild.stdin.end();
+            processChild.stderr.on('data', e => {
+                let executionTime = (new Date()) - begin
+                resolve({
+                    result: false,
+                    message: e.toString(),
+                    executionTime
+                })
+            })
             processChild.stdout.on("data", (data) => {
+                let executionTime = (new Date()) - begin
+
                 isExecutionCompleted = true
                 let val = data.toString().split('\n').filter(e => e != '')
 
-                resolve(val)
+                resolve({ data: val, result: true, executionTime })
             });
             setTimeout(() => {
-                processChild.stdin.write("^c");
-                resolve(false)
+                if (!isExecutionCompleted) {
+                    processChild.stdin.write("^c");
+                    resolve({
+                        result: false,
+                        message: "TLE"
+                    })
+                }
+
             }, 1000);
         } catch (error) {
 
@@ -47,14 +65,13 @@ async function execInput(processChild, args) {
     })
 }
 module.exports = function (problemId, filePath) {
-
     return new Promise((resolve, reject) => {
 
         try {
             const testcases = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
             const expectedOutputs = readFileLines(`${__dirname}/files/testcases/${problemId}/out.txt`).split('\n')
             let outputs = []
-            console.log(expectedOutputs)
+
             const child = spawn("python", [__dirname + filePath]);
             child.on('error', (e) => {
                 console.log(error, "here")
@@ -62,6 +79,9 @@ module.exports = function (problemId, filePath) {
             let promises = []
             execInput(child, testcases)
                 .then(data => {
+                    if (!data.result) {
+                        resolve(data)
+                    }
                     outputs.push(data)
                     for (let n = 0; n < data.length; n++) {
                         if (data[n] != expectedOutputs[n]) {

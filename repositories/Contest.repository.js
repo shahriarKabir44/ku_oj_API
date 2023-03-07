@@ -12,6 +12,13 @@ module.exports = class ContestRepository {
             values: []
         })
     }
+    static async getPreviousSubmissions({ problemId, userId }) {
+        return Promisify({
+            sql: `SELECT * FROM submission WHERE
+                 problemId=?  and submittedBy=?; `,
+            values: [problemId, userId]
+        })
+    }
     static async createSubmission({ problemId, submittedBy, time, language }) {
         await Promisify({
             sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language']),

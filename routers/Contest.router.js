@@ -15,7 +15,12 @@ ContestRouter.post('/setSubmissionFileURL', (req, res) => {
             res.send({ success: 1 })
         })
 })
-
+ContestRouter.post('/getPreviousSubmissions', (req, res) => {
+    ContestRepository.getPreviousSubmissions(req.body)
+        .then(previousSubmissions => {
+            res.send({ previousSubmissions })
+        })
+})
 ContestRouter.post('/createContest', (req, res) => {
     ContestRepository.createContest(req.body)
         .then(contestId => {
