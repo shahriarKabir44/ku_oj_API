@@ -1,13 +1,23 @@
 const SubmissionRouter = require('express').Router()
+const SubmissionRepository = require('../repositories/Submission.repository')
 
-const { upload } = require('../utils/uploadManager')
-const runPython = require('../executors/runPython')
+SubmissionRouter.post('/submit', (req, res) => {
+    SubmissionRepository.createSubmission(req.body)
+        .then(submissionId => {
+            res.send({ submissionId })
+        })
+})
 
-SubmissionRouter.post('/upload', upload.single('file'), (req, res) => {
-
-    runPython(1, '/pp/11/ppp.py')
-        .then(data => {
-            res.send({ data })
+SubmissionRouter.post('/setSubmissionFileURL', (req, res) => {
+    SubmissionRepository.setSubmissionFileURL(req.body)
+        .then(() => {
+            res.send({ success: 1 })
+        })
+})
+SubmissionRouter.post('/getPreviousSubmissions', (req, res) => {
+    SubmissionRepository.getPreviousSubmissions(req.body)
+        .then(previousSubmissions => {
+            res.send({ previousSubmissions })
         })
 })
 

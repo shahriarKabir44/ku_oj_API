@@ -41,4 +41,5 @@ function startExpress() {
     app.use('/uploadFile', require('./routers/Upload.router'))
     app.use('/contests', require('./routers/Contest.router'))
     app.use('/judge', require('./routers/Judge.router'))
+    app.use('/submission', require('./routers/Submission.router'))
 }

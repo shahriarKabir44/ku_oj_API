@@ -12,27 +12,8 @@ module.exports = class ContestRepository {
             values: []
         })
     }
-    static async getPreviousSubmissions({ problemId, userId }) {
-        return Promisify({
-            sql: `SELECT * FROM submission WHERE
-                 problemId=?  and submittedBy=?; `,
-            values: [problemId, userId]
-        })
-    }
-    static async createSubmission({ problemId, submittedBy, time, language }) {
-        await Promisify({
-            sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language']),
-            values: [problemId, submittedBy, time, language]
-        })
-        let [{ submissionId }] = await Promisify({
-            sql: `select max(id) as submissionId
-                    from submission
-                    WHERE
-                problemId =? and submittedBy =?; `,
-            values: [problemId, submittedBy]
-        })
-        return submissionId
-    }
+
+
     static async getProblemInfo({ id }) {
         let [problemInfo] = await Promisify({
             sql: `select * from problem where id=?`,
@@ -96,11 +77,5 @@ module.exports = class ContestRepository {
         })
         return contest
     }
-    static async setSubmissionFileURL({ id, submissionFileURL }) {
-        Promisify({
-            sql: `update submission set submissionFileURL=?
-                where id=?;`,
-            values: [submissionFileURL, id]
-        })
-    }
+
 }

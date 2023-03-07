@@ -2,25 +2,7 @@ const ContestRepository = require('../repositories/Contest.repository')
 
 const ContestRouter = require('express').Router()
 
-ContestRouter.post('/submit', (req, res) => {
-    ContestRepository.createSubmission(req.body)
-        .then(submissionId => {
-            res.send({ submissionId })
-        })
-})
 
-ContestRouter.post('/setSubmissionFileURL', (req, res) => {
-    ContestRepository.setSubmissionFileURL(req.body)
-        .then(() => {
-            res.send({ success: 1 })
-        })
-})
-ContestRouter.post('/getPreviousSubmissions', (req, res) => {
-    ContestRepository.getPreviousSubmissions(req.body)
-        .then(previousSubmissions => {
-            res.send({ previousSubmissions })
-        })
-})
 ContestRouter.post('/createContest', (req, res) => {
     ContestRepository.createContest(req.body)
         .then(contestId => {
