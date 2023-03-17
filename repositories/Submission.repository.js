@@ -1,5 +1,6 @@
 const Promisify = require('../utils/promisify')
 const getFile = require('../executors/getFiles')
+const QueryBuilder = require('../utils/queryBuilder')
 module.exports = class SubmissionRepository {
     static async getPreviousSubmissions({ problemId, userId }) {
         return Promisify({
@@ -29,7 +30,7 @@ module.exports = class SubmissionRepository {
                     where
                         user.id = submittedBy
                 ) as user
-            FROM submission where id=1;`,
+            FROM submission where id=?;`,
             values: [id]
         })
 
@@ -38,10 +39,10 @@ module.exports = class SubmissionRepository {
         return submissionInfo
 
     }
-    static async createSubmission({ problemId, submittedBy, time, language }) {
+    static async createSubmission({ problemId, submittedBy, time, languageName }) {
         await Promisify({
             sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language']),
-            values: [problemId, submittedBy, time, language]
+            values: [problemId, submittedBy, time, languageName]
         })
         let [{ submissionId }] = await Promisify({
             sql: `select max(id) as submissionId
