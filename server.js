@@ -42,5 +42,5 @@ function startExpress() {
     app.use('/contests', require('./routers/Contest.router'))
     app.use('/judge', require('./routers/Judge.router'))
     app.use('/submission', require('./routers/Submission.router'))
-    app.use('/user', require('./repositories/User.repository'))
+    app.use('/user', require('./routers/User.router'))
 }
