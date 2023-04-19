@@ -36,6 +36,7 @@ function startExpress() {
     app.use(require('cors')({
         origin: '*'
     }))
+
     app.use(express.json())
     app.use(express.static(__dirname + '/problemStatements'))
     app.use('/uploadFile', require('./routers/Upload.router'))
