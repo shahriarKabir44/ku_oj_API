@@ -4,7 +4,6 @@ const ContestRouter = require('express').Router()
 
 
 ContestRouter.post('/createContest', (req, res) => {
-    console.log(req.body)
     ContestRepository.createContest(req.body)
         .then(contestId => {
             res.send({ contestId })
