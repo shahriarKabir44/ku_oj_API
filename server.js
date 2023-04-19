@@ -3,7 +3,7 @@ const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
 const connection = require('./utils/dbConnection')
 const validateJWT = require('./utils/validateJWT')
-
+require('dotenv').config()
 const workers = []
 const clients = new Map()
 
@@ -42,4 +42,5 @@ function startExpress() {
     app.use('/contests', require('./routers/Contest.router'))
     app.use('/judge', require('./routers/Judge.router'))
     app.use('/submission', require('./routers/Submission.router'))
+    app.use('/user', require('./repositories/User.repository'))
 }

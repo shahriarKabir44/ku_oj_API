@@ -1,21 +1,32 @@
 const jwt = require('jsonwebtoken')
 
-module.exports = function (req, res, next) {
-    let token = req.headers['token']
+async function validateJWT(token) {
 
-    if (!token) res.send({ data: null })
+    let user = {
+        id: 1,
+        name: 'kabir',
+        password: 'kabir'
+    }
+    token = jwt.sign(user, process.env.jwtSecret)
+    if (!token) return { user: null, token: null }
     else {
-        jwt.verify(token, process.env.jwtSecret, (err, user) => {
-            if (err) {
-                res.send({
-                    user: null
-                })
-            }
-            else {
-                user.password = null
-                req.user = user
-                next()
-            }
+        return new Promise((resolve, reject) => {
+            jwt.verify(token, process.env.jwtSecret, (err, user) => {
+                if (err) {
+                    resolve({
+                        user: null,
+                        token: null
+                    })
+                }
+                else {
+                    resolve({
+                        user: user,
+                        token: token
+                    })
+                }
+            })
         })
+
     }
 }
+module.exports = validateJWT

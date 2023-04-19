@@ -16,4 +16,5 @@ module.exports = class UserRepository {
             return null
         }
     }
+
 }
