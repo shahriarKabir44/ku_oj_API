@@ -9,6 +9,15 @@ ContestRouter.post('/createContest', (req, res) => {
             res.send({ contestId })
         })
 })
+
+
+ContestRouter.get('/getUpcomingContests', (req, res) => {
+    ContestRepository.getUpcomingContests(req.body)
+        .then(contests => {
+            res.send(contests)
+        })
+})
+
 ContestRouter.get('/getContests', (req, res) => {
     ContestRepository.getContests()
         .then(contests => {

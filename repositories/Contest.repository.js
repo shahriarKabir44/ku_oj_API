@@ -13,6 +13,15 @@ module.exports = class ContestRepository {
         })
     }
 
+    static async getUpcomingContests() {
+        let time = (new Date()) * 1
+        return Promisify({
+            sql: `SELECT id,startTime,endTime,title,hostId, 
+                (select userName from user WHERE user.id=hostId) 
+                as hostName from contest where constest.endTime>=?;`,
+            values: [time]
+        })
+    }
 
     static async getProblemInfo({ id }) {
         let [problemInfo] = await Promisify({
