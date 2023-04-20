@@ -25,4 +25,11 @@ UserRouter.post('/authenticate', (req, res) => {
         })
 })
 
+UserRouter.get('/findUser/:id', (req, res) => {
+    UserRepository.findUser('id', req.params.id)
+        .then(user => {
+            res.send(user)
+        })
+})
+
 module.exports = UserRouter
