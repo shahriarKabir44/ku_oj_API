@@ -18,7 +18,7 @@ module.exports = class ContestRepository {
         return Promisify({
             sql: `SELECT id,startTime,endTime,title,hostId, 
                 (select userName from user WHERE user.id=hostId) 
-                as hostName from contest where constest.endTime>=?;`,
+                as hostName from contest where contest.startTime>=?;`,
             values: [time]
         })
     }
