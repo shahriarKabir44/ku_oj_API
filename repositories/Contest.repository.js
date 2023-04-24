@@ -26,9 +26,11 @@ module.exports = class ContestRepository {
     static async getProblemInfo({ id }) {
         let [problemInfo] = await Promisify({
             sql: `select id,statementFileURL,
-                 contestId, title,point, testcaseFileURL,
+                 contestId, title,point, testcaseFileURL, code,
                  outputFileURL, numSolutions, (select title from contest
-                    where contest.id=problem.contestId) as contestName from problem where id=?`,
+                    where contest.id=problem.contestId) as contestName 
+                    , (select code from contest
+                    where contest.id=problem.contestId) as contestCode from problem where id=?`,
             values: [id]
         })
         return problemInfo
@@ -78,6 +80,7 @@ module.exports = class ContestRepository {
                     startTime,
                     endTime,
                     title,
+                    code,
                     hostId, (
                         select userName
                         from user
