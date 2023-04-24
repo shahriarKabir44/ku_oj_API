@@ -25,7 +25,10 @@ module.exports = class ContestRepository {
 
     static async getProblemInfo({ id }) {
         let [problemInfo] = await Promisify({
-            sql: `select * from problem where id=?`,
+            sql: `select id,statementFileURL,
+                 contestId, title,point, testcaseFileURL,
+                 outputFileURL, numSolutions, (select title from contest
+                    where contest.id=problem.contestId) as contestName from problem where id=?`,
             values: [id]
         })
         return problemInfo
@@ -37,10 +40,10 @@ module.exports = class ContestRepository {
             values: [id]
         })
     }
-    static async createContest({ title, startTime, endTime, hostId }) {
+    static async createContest({ title, startTime, endTime, hostId, code }) {
         await Promisify({
-            sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId']),
-            values: [title, startTime, endTime, hostId]
+            sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code']),
+            values: [title, startTime, endTime, hostId, code]
         })
         let [{ contestId }] = await Promisify({
             sql: `select max(id) as contestId from contest where 
@@ -49,10 +52,10 @@ module.exports = class ContestRepository {
         })
         return contestId
     }
-    static async createProblem({ contestId, title, point }) {
+    static async createProblem({ contestId, title, point, code }) {
         await Promisify({
-            sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'point']),
-            values: [contestId, title, point]
+            sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'point', 'code']),
+            values: [contestId, title, point, code]
         })
         let [{ newId }] = await Promisify({
             sql: `select max(id) as newId from problem where 
