@@ -57,4 +57,11 @@ ContestRouter.get('/getProblemInfo/:id', (req, res) => {
         })
 })
 
+ContestRouter.get('/searchContestByProblem/:problemId', (req, res) => {
+    ContestRepository.searchContestByProblem(req.params)
+        .then(contest => {
+            res.send(contest)
+        })
+})
+
 module.exports = ContestRouter

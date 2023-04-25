@@ -92,5 +92,12 @@ module.exports = class ContestRepository {
         })
         return contest
     }
-
+    static async searchContestByProblem({ problemId }) {
+        const [contest] = await Promisify({
+            sql: `select * from contest 
+                where contest.id=(select contestId from problem where problem.id=?);`,
+            values: [problemId]
+        })
+        return contest
+    }
 }
