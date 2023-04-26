@@ -36,5 +36,10 @@ module.exports = class UserRepository {
         let token = jwt.sign(user, process.env.jwtSecret)
         return { user, token }
     }
-
+    static async getHostedContests({ id }) {
+        return promisify({
+            sql: `select * from contest where contest.hostId=? order by startTime desc;`,
+            values: [id]
+        })
+    }
 }

@@ -32,4 +32,11 @@ UserRouter.get('/findUser/:id', (req, res) => {
         })
 })
 
+UserRouter.get('/getHostedContests/:id', (req, res) => {
+    UserRepository.getHostedContests(req.params)
+        .then(contests => {
+            res.send(contests)
+        })
+})
+
 module.exports = UserRouter
