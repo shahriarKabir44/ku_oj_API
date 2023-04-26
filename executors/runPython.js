@@ -22,38 +22,45 @@ const readFileLines = filename =>
     fs.readFileSync(filename)
         .toString('UTF8')
 
-
+/**
+ * 
+ * @param {ChildProcessWithoutNullStreams} processChild 
+ * @param {String} args 
+ * @returns 
+ */
 async function execInput(processChild, args) {
     return new Promise((resolve, reject) => {
         try {
             let begin = new Date()
-
+            let messages = []
             processChild.stdin.write(args);
             let isExecutionCompleted = false
-            //processChild.stdin.write("1");
             processChild.stdin.end();
             processChild.stderr.on('data', e => {
-                let executionTime = (new Date()) - begin
-                resolve({
+                let message = e.toString()
+                messages.push(message)
+
+            })
+            processChild.stderr.on('end', e => {
+                reject({
+                    type: 3,
                     result: false,
-                    message: e.toString(),
-                    executionTime
+                    message: messages,
                 })
             })
             processChild.stdout.on("data", (data) => {
                 let executionTime = (new Date()) - begin
-
                 isExecutionCompleted = true
                 let val = data.toString().split('\n').filter(e => e != '')
-
                 resolve({ data: val, result: true, executionTime })
             });
             setTimeout(() => {
                 if (!isExecutionCompleted) {
                     processChild.stdin.write("^c");
-                    resolve({
+                    reject({
                         result: false,
-                        message: "TLE"
+                        message: "TLE",
+                        type: 4
                     })
                 }
 
@@ -65,37 +72,49 @@ async function execInput(processChild, args) {
     })
 }
 module.exports = function (problemId, filePath) {
+    let errorMessage = []
     return new Promise((resolve, reject) => {
 
         try {
-            const testcases = readFileLines(`${__dirname}/files/testcases/${problemId}/in.txt`)
-            const expectedOutputs = readFileLines(`${__dirname}/files/testcases/${problemId}/out.txt`).split('\n')
+            const testcases = readFileLines(`${__dirname}/testcases/${problemId}/in.txt`)
+            const expectedOutputs = readFileLines(`${__dirname}/testcases/${problemId}/out.txt`).split('\n')
             let outputs = []
 
             const child = spawn("python", [__dirname + filePath]);
             child.on('error', (e) => {
-                console.log(error, "here")
             })
-            let promises = []
             execInput(child, testcases)
                 .then(data => {
                     if (!data.result) {
                         resolve(data)
                     }
-                    outputs.push(data)
+                    outputs.push(data.data)
+
                     for (let n = 0; n < data.length; n++) {
                         if (data[n] != expectedOutputs[n]) {
-                            resolve(false)
+                            resolve({
+                                result: false,
+                                type: 2
+                            })
                         }
                     }
-                    resolve(true)
+                    resolve({
+                        result: true,
+                        type: 1,
+                        executionTime: data.executionTime
+                    })
+                })
+                .catch(err => {
+
+                    reject(err)
                 })
 
 
 
 
         } catch (error) {
-            console.error(error)
+
+            reject(error)
         }
 
     })
