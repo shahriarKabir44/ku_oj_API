@@ -39,10 +39,10 @@ module.exports = class SubmissionRepository {
         return submissionInfo
 
     }
-    static async createSubmission({ problemId, submittedBy, time, languageName }) {
+    static async createSubmission({ problemId, submittedBy, time, languageName, contestId }) {
         await Promisify({
-            sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language']),
-            values: [problemId, submittedBy, time, languageName]
+            sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId']),
+            values: [problemId, submittedBy, time, languageName, contestId]
         })
         let [{ submissionId }] = await Promisify({
             sql: `select max(id) as submissionId
