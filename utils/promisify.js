@@ -1,6 +1,6 @@
 const connection = require('./dbConnection')
 
-module.exports = function ({ sql, values }) {
+function Promisify({ sql, values }) {
     return new Promise(function (resolve, reject) {
         connection.query({
             sql, values
@@ -10,3 +10,4 @@ module.exports = function ({ sql, values }) {
         })
     })
 }
+module.exports = Promisify

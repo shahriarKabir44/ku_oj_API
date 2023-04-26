@@ -92,7 +92,7 @@ module.exports = function (problemId, filePath) {
 
                     for (let n = 0; n < data.length; n++) {
                         if (data[n] != expectedOutputs[n]) {
-                            resolve({
+                            reject({
                                 result: false,
                                 type: 2
                             })

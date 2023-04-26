@@ -9,7 +9,12 @@ class QueryBuilder {
         return `select * from ${tableName} where Id=(select max(Id) from ${tableName})`
     }
 
+    static createUpdateQuery(tableName, fields) {
+        fields = fields.map(el => el + '=?')
+        let updateList = fields.toString()
 
+        return `update ${tableName} set ${updateList}`
+    }
 }
 
 module.exports = QueryBuilder
