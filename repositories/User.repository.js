@@ -42,4 +42,12 @@ module.exports = class UserRepository {
             values: [id]
         })
     }
+    static async getContestSubmissions({ contestId, userId }) {
+        return promisify({
+            sql: `select id,time,verdict,language, execTime,problemId, (select title from problem
+                where problem.id=submission.problemId
+                ) as problemName from submission where contestId=? and submittedBy=? order by time desc;`,
+            values: [contestId, userId]
+        })
+    }
 }

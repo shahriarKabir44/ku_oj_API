@@ -39,4 +39,11 @@ UserRouter.get('/getHostedContests/:id', (req, res) => {
         })
 })
 
+UserRouter.post('/getContestSubmissions', (req, res) => {
+    UserRepository.getContestSubmissions(req.body)
+        .then(contests => {
+            res.send(contests)
+        })
+})
+
 module.exports = UserRouter
