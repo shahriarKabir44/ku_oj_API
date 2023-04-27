@@ -84,14 +84,20 @@ module.exports = function (problemId, filePath) {
             child.on('error', (e) => {
             })
             execInput(child, testcases)
-                .then(data => {
-                    if (!data.result) {
-                        resolve(data)
+                .then(output => {
+                    if (!output.result) {
+                        resolve(output)
                     }
-                    outputs.push(data.data)
+                    outputs.push(output.data)
 
-                    for (let n = 0; n < data.length; n++) {
-                        if (data[n] != expectedOutputs[n]) {
+                    if (output.data.length != expectedOutputs.length) {
+                        reject({
+                            result: false,
+                            type: 2
+                        })
+                    }
+                    for (let n = 0; n < output.data.length; n++) {
+                        if (output.data[n] != expectedOutputs[n]) {
                             reject({
                                 result: false,
                                 type: 2
@@ -101,7 +107,7 @@ module.exports = function (problemId, filePath) {
                     resolve({
                         result: true,
                         type: 1,
-                        executionTime: data.executionTime
+                        executionTime: output.executionTime
                     })
                 })
                 .catch(err => {

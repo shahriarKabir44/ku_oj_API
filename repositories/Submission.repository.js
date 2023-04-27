@@ -2,10 +2,10 @@ const Promisify = require('../utils/promisify')
 const getFile = require('../executors/getFiles')
 const QueryBuilder = require('../utils/queryBuilder')
 module.exports = class SubmissionRepository {
-    static async getPreviousSubmissions({ problemId, userId }) {
+    static async getPreviousSubmissionsOfProblem({ problemId, userId }) {
         return Promisify({
             sql: `SELECT * FROM submission WHERE
-                 problemId=?  and submittedBy=?; `,
+                 problemId=?  and submittedBy=? order by time desc; `,
             values: [problemId, userId]
         })
     }

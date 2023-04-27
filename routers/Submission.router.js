@@ -17,8 +17,8 @@ SubmissionRouter.post('/setSubmissionFileURL', (req, res) => {
         })
 
 })
-SubmissionRouter.post('/getPreviousSubmissions', (req, res) => {
-    SubmissionRepository.getPreviousSubmissions(req.body)
+SubmissionRouter.post('/getPreviousSubmissionsOfProblem', (req, res) => {
+    SubmissionRepository.getPreviousSubmissionsOfProblem(req.body)
         .then(previousSubmissions => {
             res.send({ previousSubmissions })
         })
