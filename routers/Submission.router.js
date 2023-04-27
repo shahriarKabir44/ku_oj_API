@@ -1,4 +1,5 @@
 const SubmissionRouter = require('express').Router()
+const JudgeRepository = require('../repositories/Judge.repository')
 const SubmissionRepository = require('../repositories/Submission.repository')
 
 SubmissionRouter.post('/submit', (req, res) => {
@@ -8,11 +9,10 @@ SubmissionRouter.post('/submit', (req, res) => {
         })
 })
 
-SubmissionRouter.post('/setSubmissionFileURL', (req, res) => {
-    SubmissionRepository.setSubmissionFileURL(req.body)
-        .then(() => {
-            res.send({ success: 1 })
-        })
+SubmissionRouter.get('/setSubmissionFileURL/:data', (req, res) => {
+    SubmissionRepository.setSubmissionFileURL(JSON.parse(req.params.data))
+    JudgeRepository.judgeSubmission(JSON.parse(req.params.data), res)
+
 })
 SubmissionRouter.post('/getPreviousSubmissions', (req, res) => {
     SubmissionRepository.getPreviousSubmissions(req.body)
