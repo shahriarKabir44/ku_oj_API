@@ -4,23 +4,17 @@ const QueryBuilder = require("../utils/queryBuilder");
 
 module.exports = class JudgeRepository {
 
-    static async judgeSubmission({ contestId, userId, problemId, id: submissionId, submissionFileURL, points }, responseObject) {
-        responseObject.setHeader("connection", "keep-alive");
-        responseObject.setHeader("Content-Type", "text/event-stream");
+    static async judgeSubmission({ contestId, userId, problemId, id: submissionId, submissionFileURL, points }) {
 
-        responseObject.write(JSON.stringify({ status: 0, message: 'judging' }))
         try {
             const path = `/${submissionFileURL}`;
             const data = await runPython(problemId, path)
-            console.log(data)
-            responseObject.write(JSON.stringify(data))
             this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.executionTime, points)
-            responseObject.end()
+            return data
         } catch (error) {
             console.log(error)
-            responseObject.write(JSON.stringify(error))
             this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5)
-            responseObject.end()
+            return error
         }
     }
     static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points) {

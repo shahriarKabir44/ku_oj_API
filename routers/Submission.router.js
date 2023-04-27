@@ -9,9 +9,12 @@ SubmissionRouter.post('/submit', (req, res) => {
         })
 })
 
-SubmissionRouter.get('/setSubmissionFileURL/:data', (req, res) => {
-    SubmissionRepository.setSubmissionFileURL(JSON.parse(req.params.data))
-    JudgeRepository.judgeSubmission(JSON.parse(req.params.data), res)
+SubmissionRouter.post('/setSubmissionFileURL', (req, res) => {
+    SubmissionRepository.setSubmissionFileURL(req.body)
+    JudgeRepository.judgeSubmission(req.body)
+        .then(resp => {
+            res.send(resp)
+        })
 
 })
 SubmissionRouter.post('/getPreviousSubmissions', (req, res) => {
