@@ -32,7 +32,7 @@ CREATE TABLE `contest` (
   PRIMARY KEY (`id`),
   KEY `hostId` (`hostId`),
   CONSTRAINT `contest_ibfk_1` FOREIGN KEY (`hostId`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -45,12 +45,9 @@ DROP TABLE IF EXISTS `contestResult`;
 CREATE TABLE `contestResult` (
   `contestId` int DEFAULT NULL,
   `contestantId` int DEFAULT NULL,
-  `points` int DEFAULT NULL,
-  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
-  `submissionDetails` varchar(255) DEFAULT '""',
-  PRIMARY KEY (`id`),
-  KEY `contestId` (`contestId`),
-  KEY `contestantId` (`contestantId`),
+  `points` int DEFAULT '0',
+  UNIQUE KEY `submissioInfo` (`contestId`,`contestantId`),
+  UNIQUE KEY `contestScore` (`contestantId`,`contestId`),
   CONSTRAINT `contestResult_ibfk_1` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`),
   CONSTRAINT `contestResult_ibfk_2` FOREIGN KEY (`contestantId`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -68,7 +65,7 @@ CREATE TABLE `problem` (
   `statementFileURL` text,
   `contestId` int NOT NULL,
   `title` varchar(255) NOT NULL,
-  `point` int NOT NULL DEFAULT '1',
+  `points` int NOT NULL DEFAULT '1',
   `testcaseFileURL` text,
   `outputFileURL` text,
   `numSolutions` int DEFAULT '0',
@@ -76,7 +73,7 @@ CREATE TABLE `problem` (
   PRIMARY KEY (`id`),
   KEY `contestId` (`contestId`),
   CONSTRAINT `problem_ibfk_1` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -107,12 +104,11 @@ CREATE TABLE `submission` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
   `time` double NOT NULL,
   `verdict` varchar(10) DEFAULT NULL,
-  `execTime` varchar(5) DEFAULT NULL,
+  `execTime` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'N/A',
   `language` varchar(20) NOT NULL,
   `submissionFileURL` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
   `problemId` int NOT NULL,
   `submittedBy` int NOT NULL,
-  `score` int DEFAULT NULL,
   `contestId` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `problemId` (`problemId`),
@@ -121,7 +117,7 @@ CREATE TABLE `submission` (
   CONSTRAINT `submission_ibfk_1` FOREIGN KEY (`problemId`) REFERENCES `problem` (`id`),
   CONSTRAINT `submission_ibfk_2` FOREIGN KEY (`submittedBy`) REFERENCES `user` (`id`),
   CONSTRAINT `submission_ibfk_3` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -132,13 +128,14 @@ DROP TABLE IF EXISTS `submissionResult`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `submissionResult` (
-  `point` int DEFAULT '0',
-  `contestResutId` int DEFAULT NULL,
-  `probemId` int DEFAULT NULL,
-  KEY `contestResutId` (`contestResutId`),
-  KEY `probemId` (`probemId`),
-  CONSTRAINT `submissionResult_ibfk_1` FOREIGN KEY (`contestResutId`) REFERENCES `contestResult` (`id`),
-  CONSTRAINT `submissionResult_ibfk_2` FOREIGN KEY (`probemId`) REFERENCES `problem` (`id`)
+  `points` int DEFAULT '0',
+  `contestantId` int DEFAULT NULL,
+  `problemId` int DEFAULT NULL,
+  UNIQUE KEY `submissionScore` (`contestantId`,`problemId`),
+  KEY `probemId` (`problemId`),
+  KEY `fk_submissionResult_1_idx` (`contestantId`),
+  CONSTRAINT `fk_submissionResult_1` FOREIGN KEY (`contestantId`) REFERENCES `user` (`id`),
+  CONSTRAINT `submissionResult_ibfk_2` FOREIGN KEY (`problemId`) REFERENCES `problem` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -166,4 +163,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-04-24 20:20:05
+-- Dump completed on 2023-04-27 11:55:32
