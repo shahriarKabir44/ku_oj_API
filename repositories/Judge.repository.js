@@ -9,12 +9,12 @@ module.exports = class JudgeRepository {
         try {
             const path = `/${submissionFileURL}`;
             const data = await runPython(problemId, path)
-            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.executionTime, points)
-            return data
+            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points)
+            return { ...data, id: submissionId }
         } catch (error) {
             console.log(error)
             this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5)
-            return error
+            return { ...error, id: submissionId }
         }
     }
     static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points) {

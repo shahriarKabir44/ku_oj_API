@@ -46,21 +46,26 @@ async function execInput(processChild, args) {
                     type: 3,
                     result: false,
                     message: messages,
+                    verdict: 'ERROR',
+                    execTime: 'N/A'
+
                 })
             })
             processChild.stdout.on("data", (data) => {
-                let executionTime = (new Date()) - begin
+                let execTime = (new Date()) - begin
                 isExecutionCompleted = true
                 let val = data.toString().split('\n').filter(e => e != '')
-                resolve({ data: val, result: true, executionTime })
+                resolve({ data: val, result: true, execTime })
             });
             setTimeout(() => {
                 if (!isExecutionCompleted) {
                     processChild.stdin.write("^c");
                     reject({
                         result: false,
-                        message: "TLE",
-                        type: 4
+                        verdict: "TLE",
+                        type: 4,
+                        execTime: 'N/A'
+
                     })
                 }
 
@@ -93,21 +98,27 @@ module.exports = function (problemId, filePath) {
                     if (output.data.length != expectedOutputs.length) {
                         reject({
                             result: false,
-                            type: 2
+                            type: 2,
+                            verdict: 'WA',
+                            execTime: 'N/A'
+
                         })
                     }
                     for (let n = 0; n < output.data.length; n++) {
                         if (output.data[n] != expectedOutputs[n]) {
                             reject({
                                 result: false,
-                                type: 2
+                                type: 2,
+                                verdict: 'WA',
+                                execTime: 'N/A'
                             })
                         }
                     }
                     resolve({
                         result: true,
                         type: 1,
-                        executionTime: output.executionTime
+                        verdict: 'AC',
+                        execTime: output.execTime
                     })
                 })
                 .catch(err => {
