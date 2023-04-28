@@ -32,7 +32,7 @@ CREATE TABLE `contest` (
   PRIMARY KEY (`id`),
   KEY `hostId` (`hostId`),
   CONSTRAINT `contest_ibfk_1` FOREIGN KEY (`hostId`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -46,6 +46,9 @@ CREATE TABLE `contestResult` (
   `contestId` int DEFAULT NULL,
   `contestantId` int DEFAULT NULL,
   `points` int DEFAULT '0',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `official_description` text,
+  `official_points` int DEFAULT NULL,
   UNIQUE KEY `submissioInfo` (`contestId`,`contestantId`),
   UNIQUE KEY `contestScore` (`contestantId`,`contestId`),
   CONSTRAINT `contestResult_ibfk_1` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`),
@@ -73,7 +76,7 @@ CREATE TABLE `problem` (
   PRIMARY KEY (`id`),
   KEY `contestId` (`contestId`),
   CONSTRAINT `problem_ibfk_1` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -117,7 +120,7 @@ CREATE TABLE `submission` (
   CONSTRAINT `submission_ibfk_1` FOREIGN KEY (`problemId`) REFERENCES `problem` (`id`),
   CONSTRAINT `submission_ibfk_2` FOREIGN KEY (`submittedBy`) REFERENCES `user` (`id`),
   CONSTRAINT `submission_ibfk_3` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,6 +134,9 @@ CREATE TABLE `submissionResult` (
   `points` int DEFAULT '0',
   `contestantId` int DEFAULT NULL,
   `problemId` int DEFAULT NULL,
+  `official_points` int DEFAULT '0',
+  `finalVerdict` int DEFAULT '0',
+  `finalVerdictOfficial` int DEFAULT '0',
   UNIQUE KEY `submissionScore` (`contestantId`,`problemId`),
   KEY `probemId` (`problemId`),
   KEY `fk_submissionResult_1_idx` (`contestantId`),
@@ -163,4 +169,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-04-27 11:56:51
+-- Dump completed on 2023-04-28 15:34:23

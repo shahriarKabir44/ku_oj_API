@@ -4,20 +4,20 @@ const QueryBuilder = require("../utils/queryBuilder");
 
 module.exports = class JudgeRepository {
 
-    static async judgeSubmission({ contestId, userId, problemId, id: submissionId, submissionFileURL, points }) {
+    static async judgeSubmission({ contestId, userId, problemId, id: submissionId, submissionFileURL, points, isOfficial }) {
 
         try {
             const path = `/${submissionFileURL}`;
             const data = await runPython(problemId, path)
-            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points)
+            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial)
             return { ...data, id: submissionId }
         } catch (error) {
             console.log(error)
-            this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5)
+            this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5, isOfficial)
             return { ...error, id: submissionId }
         }
     }
-    static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points) {
+    static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial) {
         await Promisify({
             sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
                  where id=?;`,
@@ -25,20 +25,20 @@ module.exports = class JudgeRepository {
         })
         if (status == 1) { //when AC
 
-            this.setScoreWhenAccepted(problemId, userId, points, contestId)
+            this.setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial)
         }
         else {
-            this.setScoreWhenRejected(problemId, userId, points, contestId)
+            this.setScoreWhenRejected(problemId, userId, points, contestId, isOfficial)
         }
     }
 
-    static async setScoreWhenRejected(problemId, userId, points, contestId) {
-        this.updateSubmissionResult(userId, problemId, points)
-        this.updateContestResult(contestId, userId, points, problemId)
+    static async setScoreWhenRejected(problemId, userId, points, contestId, isOfficial) {
+        this.updateSubmissionResult(userId, problemId, points, isOfficial)
+        this.updateContestResult(contestId, userId, points, problemId, isOfficial)
     }
 
 
-    static async setScoreWhenAccepted(problemId, userId, points, contestId) {
+    static async setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial) {
         const [{ acCounter }] = await Promisify({
             sql: `select count(id) as acCounter from submission where verdict='AC' and
                     problemId=? and submittedBy=?;`,
@@ -46,11 +46,11 @@ module.exports = class JudgeRepository {
 
         })
         if (acCounter == 1) {
-            this.updateSubmissionResult(userId, problemId, points)
-            this.updateContestResult(contestId, userId, points, problemId)
+            this.updateSubmissionResult(userId, problemId, points, isOfficial)
+            this.updateContestResult(contestId, userId, points, problemId, isOfficial)
         }
     }
-    static async updateContestResult(contestId, contestantId, points, problemId) {
+    static async updateContestResult(contestId, contestantId, points, problemId, isOfficial) {
         let [contestResult] = await Promisify({
             sql: `select * from contestResult where contestId=? and contestantId=?;`,
             values: [contestId, contestantId]
@@ -58,17 +58,25 @@ module.exports = class JudgeRepository {
         if (!contestResult) {
             let description = {}
             description[problemId] = points
-            return Promisify({
+            await Promisify({
                 sql: `insert into contestResult(points,description,contestId,contestantId) values(?,?,?,?) ;`,
                 values: [points, JSON.stringify(description), contestId, contestantId]
             })
         }
-        let { description } = contestResult
-        description = JSON.parse(description)
-        description[problemId] = points
-        return Promisify({
-            sql: `update contestResult set points=points+?, description=? where contestId=? and contestantId=?;`,
-            values: [points, JSON.stringify(description), contestId, contestantId]
+        else {
+            let { description } = contestResult
+            description = JSON.parse(description)
+            description[problemId] = points
+            await Promisify({
+                sql: `update contestResult set points=points+?, description=? where contestId=? and contestantId=?;`,
+                values: [points, JSON.stringify(description), contestId, contestantId]
+            })
+        }
+        if (!isOfficial) return
+        Promisify({
+            sql: `update contestResult set official_points=points,official_description=description
+                  where contestId=? and contestantId=?;`,
+            values: [contestId, contestantId]
         })
     }
 
@@ -84,7 +92,7 @@ module.exports = class JudgeRepository {
                             )
                         values(?, ?, ?,?) 
                         on DUPLICATE key UPDATE points = points+?, finalVerdict=(select case when finalVerdict>? then finalVerdict else ? end )  ;`,
-            values: [userId, problemId, points, points, finalVerdict, finalVerdict]
+            values: [userId, problemId, points, finalVerdict, points, finalVerdict, finalVerdict]
         })
         if (!isOfficial) return
         Promisify({
