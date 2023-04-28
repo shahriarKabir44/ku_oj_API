@@ -4,7 +4,7 @@ const QueryBuilder = require("../utils/queryBuilder");
 
 module.exports = class JudgeRepository {
 
-    static async judgeSubmission({ contestId, userId, problemId, id: submissionId, submissionFileURL, points, isOfficial }) {
+    static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial }) {
 
         try {
             const path = `/${submissionFileURL}`;

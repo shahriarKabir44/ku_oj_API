@@ -4,9 +4,9 @@ const SubmissionRepository = require('../repositories/Submission.repository')
 const { upload } = require('../utils/fileManager')
 
 SubmissionRouter.post('/submit', [(req, res, next) => {
-    console.log(req.headers)
     SubmissionRepository.createSubmission(JSON.parse(req.headers.additionals))
         .then(submissionId => {
+            req.headers.submissionid = submissionId
             req.submissionId = submissionId
             next()
         })
@@ -14,7 +14,6 @@ SubmissionRouter.post('/submit', [(req, res, next) => {
     req.submissionFileURL = req.fileDir + '/' + req.filename
     next()
 }], (req, res) => {
-    console.log(req.headers.additionals)
     let data = JSON.parse(req.headers.additionals)
     data.submissionId = req.submissionId
     data.submissionFileURL = req.submissionFileURL
