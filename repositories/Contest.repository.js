@@ -114,4 +114,13 @@ module.exports = class ContestRepository {
         })
         return registration != null
     }
+
+    static async getContestStandings({ contestId, pageNumber, isOfficial }) {
+        return Promisify({
+            sql: `select contestId,contestantId, (select userName from user where user.id=contestantId),
+                points, description,official_description,official_points
+                from contestResult where contestId=? order by ${isOfficial ? 'points' : 'official_points'} desc limit(?,20); `,
+            values: [contestId, pageNumber]
+        })
+    }
 }

@@ -12,7 +12,6 @@ module.exports = class JudgeRepository {
             this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial)
             return { ...data, id: submissionId }
         } catch (error) {
-            console.log(error)
             this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5, isOfficial)
             return { ...error, id: submissionId }
         }
