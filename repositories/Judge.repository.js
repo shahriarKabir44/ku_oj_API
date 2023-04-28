@@ -33,8 +33,8 @@ module.exports = class JudgeRepository {
     }
 
     static async setScoreWhenRejected(problemId, userId, points, contestId) {
-        this.updateSubmissionResult(userId, problemId, -points)
-        this.updateContestResult(contestId, userId, -points)
+        this.updateSubmissionResult(userId, problemId, points)
+        this.updateContestResult(contestId, userId, points, problemId)
     }
 
 
@@ -47,27 +47,50 @@ module.exports = class JudgeRepository {
         })
         if (acCounter == 1) {
             this.updateSubmissionResult(userId, problemId, points)
-            this.updateContestResult(contestId, userId, points)
+            this.updateContestResult(contestId, userId, points, problemId)
         }
     }
-    static async updateContestResult(contestId, contestantId, points) {
-        Promisify({
-            sql: `insert into contestResult(contestId,contestantId,points)
-                values(?,?,?) on DUPLICATE key UPDATE points = points+?;`,
-            values: [contestId, contestantId, points, points]
+    static async updateContestResult(contestId, contestantId, points, problemId) {
+        let [contestResult] = await Promisify({
+            sql: `select * from contestResult where contestId=? and contestantId=?;`,
+            values: [contestId, contestantId]
+        })
+        if (!contestResult) {
+            let description = {}
+            description[problemId] = points
+            return Promisify({
+                sql: `insert into contestResult(points,description,contestId,contestantId) values(?,?,?,?) ;`,
+                values: [points, JSON.stringify(description), contestId, contestantId]
+            })
+        }
+        let { description } = contestResult
+        description = JSON.parse(description)
+        description[problemId] = points
+        return Promisify({
+            sql: `update contestResult set points=points+?, description=? where contestId=? and contestantId=?;`,
+            values: [points, JSON.stringify(description), contestId, contestantId]
         })
     }
 
-    static async updateSubmissionResult(userId, problemId, points) {
-        Promisify({
+    static async updateSubmissionResult(userId, problemId, points, isOfficial) {
+        let finalVerdict = points > 0 ? 1 : 0;
+
+        await Promisify({
             sql: `INSERT into submissionResult(
                                 contestantId,
                                 problemId,
-                                points
+                                points,
+                                finalVerdict
                             )
-                        values(?, ?, ?) 
-                        on DUPLICATE key UPDATE points = points+?;`,
-            values: [userId, problemId, points, points]
+                        values(?, ?, ?,?) 
+                        on DUPLICATE key UPDATE points = points+?, finalVerdict=(select case when finalVerdict>? then finalVerdict else ? end )  ;`,
+            values: [userId, problemId, points, points, finalVerdict, finalVerdict]
+        })
+        if (!isOfficial) return
+        Promisify({
+            sql: `update submissionResult set finalVerdictOfficial=finalVerdict, official_points=points
+                where problemId=? and contestantId=? ;`,
+            values: [problemId, userId]
         })
     }
 

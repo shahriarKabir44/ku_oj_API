@@ -57,7 +57,7 @@ module.exports = class ContestRepository {
     static async createProblem({ contestId, title, points, code }) {
         await Promisify({
             sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code']),
-            values: [contestId, title, points, code]
+            values: [contestId, title, points * 100, code]
         })
         let [{ newId }] = await Promisify({
             sql: `select max(id) as newId from problem where 
