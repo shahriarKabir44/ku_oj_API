@@ -45,6 +45,10 @@ module.exports = class JudgeRepository {
 
         })
         if (acCounter == 1) {
+            Promisify({
+                sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
+                values: [problemId]
+            })
             this.updateSubmissionResult(userId, problemId, points, isOfficial)
             this.updateContestResult(contestId, userId, points, problemId, isOfficial)
         }

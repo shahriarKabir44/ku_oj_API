@@ -117,9 +117,9 @@ module.exports = class ContestRepository {
 
     static async getContestStandings({ contestId, pageNumber, isOfficial }) {
         return Promisify({
-            sql: `select contestId,contestantId, (select userName from user where user.id=contestantId),
+            sql: `select contestId,contestantId, (select userName from user where user.id=contestantId) as contestantName,
                 points, description,official_description,official_points
-                from contestResult where contestId=? order by ${isOfficial ? 'points' : 'official_points'} desc limit(?,20); `,
+                from contestResult where contestId=? order by ${isOfficial ? 'points' : 'official_points'} desc limit ?,20 ; `,
             values: [contestId, pageNumber]
         })
     }

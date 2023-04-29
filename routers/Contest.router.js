@@ -77,4 +77,11 @@ ContestRouter.post('/isRegistered', (req, res) => {
         })
 })
 
+ContestRouter.post('/getContestStandings', (req, res) => {
+    ContestRepository.getContestStandings(req.body)
+        .then(standings => {
+            res.send(standings)
+        })
+})
+
 module.exports = ContestRouter
