@@ -32,8 +32,8 @@ SubmissionRouter.post('/getPreviousSubmissionsOfProblem', (req, res) => {
         })
 })
 
-SubmissionRouter.get('/getSubmissionInfo/:id', (req, res) => {
-    SubmissionRepository.getSubmissionInfo(req.params)
+SubmissionRouter.post('/getSubmissionInfo', (req, res) => {
+    SubmissionRepository.getSubmissionInfo(req.body)
         .then(submissionInfo => {
             res.send({ submissionInfo })
         })

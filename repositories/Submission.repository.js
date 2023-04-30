@@ -9,8 +9,17 @@ module.exports = class SubmissionRepository {
             values: [problemId, userId]
         })
     }
-    static async getSubmissionInfo({ id }) {
-        let [submissionInfo] = await Promisify({
+    static async getSubmissionInfo({ contestId, problemId, submissionId, submittedBy, viewer }) {
+        let [contest] = await Promisify({
+            sql: `select * from contest where id=?;`,
+            values: [contestId]
+        })
+
+        if (!contest) return {
+            success: false,
+            type: 1
+        }
+        let [submission] = await Promisify({
             sql: `SELECT
                 id,
                 time,
@@ -29,14 +38,26 @@ module.exports = class SubmissionRepository {
                     from user
                     where
                         user.id = submittedBy
-                ) as user
+                ) as contestantName
             FROM submission where id=?;`,
-            values: [id]
+            values: [submissionId]
         })
-
-        let file = getFile(submissionInfo.submissionFileURL)
-        submissionInfo.code = file
-        return submissionInfo
+        submission.contest = contest
+        if (submission.submittedBy == viewer || contest.endTime <= (new Date()) * 1 || contest.hostId == viewer) {
+            return {
+                success: true,
+                submission,
+                code: getFile(submission.submissionFileURL)
+            }
+        }
+        else {
+            if (contest.endTime >= (new Date()) * 1) {
+                return {
+                    success: false,
+                    type: 2
+                }
+            }
+        }
 
     }
     static async createSubmission({ problemId, submittedBy, time, languageName, contestId }) {
