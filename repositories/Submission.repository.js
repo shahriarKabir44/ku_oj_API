@@ -9,7 +9,7 @@ module.exports = class SubmissionRepository {
             values: [problemId, userId]
         })
     }
-    static async getSubmissionInfo({ contestId, problemId, submissionId, submittedBy, viewer }) {
+    static async getSubmissionInfo({ contestId, submissionId, viewer }) {
         let [contest] = await Promisify({
             sql: `select * from contest where id=?;`,
             values: [contestId]
@@ -27,6 +27,7 @@ module.exports = class SubmissionRepository {
                 verdict,
                 language,
                 submissionFileURL,
+                contestId,
                 problemId,
                 submittedBy, (
                     select problem.title
@@ -38,10 +39,16 @@ module.exports = class SubmissionRepository {
                     from user
                     where
                         user.id = submittedBy
-                ) as contestantName
+                ) as authorName
             FROM submission where id=?;`,
             values: [submissionId]
         })
+        if (!submission) {
+            return {
+                success: false,
+                type: 1
+            }
+        }
         submission.contest = contest
         if (submission.submittedBy == viewer || contest.endTime <= (new Date()) * 1 || contest.hostId == viewer) {
             return {
