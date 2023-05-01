@@ -15,6 +15,7 @@ module.exports = class SubmissionRepository {
             values: [contestId]
         })
 
+
         if (!contest) return {
             success: false,
             type: 1
@@ -34,7 +35,13 @@ module.exports = class SubmissionRepository {
                     from problem
                     WHERE
                         problem.id = problemId
-                ) as problemName, (
+                ) as problemName,
+                (
+                    select problem.code
+                    from problem
+                    WHERE
+                        problem.id = problemId
+                ) as problemCode,  (
                     SELECT user.userName
                     from user
                     where
