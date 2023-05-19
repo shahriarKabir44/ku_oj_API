@@ -18,6 +18,13 @@ ContestRouter.get('/getUpcomingContests', (req, res) => {
         })
 })
 
+ContestRouter.get('/getFullContestDetails/:contestId', (req, res) => {
+    ContestRepository.getFullContestDetails(req.params)
+        .then(fullContestDetails => {
+            res.send(fullContestDetails)
+        })
+})
+
 ContestRouter.get('/getContests', (req, res) => {
     ContestRepository.getContests()
         .then(contests => {

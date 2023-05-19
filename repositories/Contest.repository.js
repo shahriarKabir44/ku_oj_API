@@ -123,4 +123,23 @@ module.exports = class ContestRepository {
             values: [contestId, pageNumber]
         })
     }
+    static async getFullContestDetails({ contestId }) {
+        let data = {}
+        await Promise.all([
+            Promisify({
+                sql: `select * from contest where id=?;`,
+                values: [contestId]
+            }).then(([contestInfo]) => {
+                console.log(contestInfo)
+                data = { ...data, ...contestInfo }
+            }),
+            Promisify({
+                sql: `select * from problem where contestId=?`,
+                values: [contestId]
+            }).then(problems => {
+                data = { ...data, problems }
+            })
+        ])
+        return data
+    }
 }
