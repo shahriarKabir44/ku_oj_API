@@ -2,4 +2,4 @@
 /executors/*
 /tests/*
 /problemStatements/*
-.env
+.env.dev

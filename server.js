@@ -5,7 +5,7 @@ const { initConnection } = require('./utils/dbConnection')
 const validateJWT = require('./utils/validateJWT')
 const workers = []
 const clients = new Map()
-require('dotenv').config({ path: `${__dirname}/.env` })
+require('dotenv').config({ path: `${__dirname}/.env.dev` })
 
 if (cluster.isMaster) {
 
