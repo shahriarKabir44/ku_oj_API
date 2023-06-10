@@ -2,3 +2,4 @@
 /executors/*
 /tests/*
 /problemStatements/*
+.env

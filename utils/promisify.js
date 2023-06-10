@@ -1,4 +1,4 @@
-const connection = require('./dbConnection')
+const { connection } = require('./dbConnection')
 
 function Promisify({ sql, values }) {
     return new Promise(function (resolve, reject) {

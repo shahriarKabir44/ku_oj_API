@@ -1,13 +1,12 @@
 const express = require('express')
 const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
-const connection = require('./utils/dbConnection')
+const { initConnection } = require('./utils/dbConnection')
 const validateJWT = require('./utils/validateJWT')
-require('dotenv').config()
 const workers = []
 const clients = new Map()
+require('dotenv').config({ path: `${__dirname}/.env` })
 
-connection.connect()
 if (cluster.isMaster) {
 
     for (let i = 0; i < totalCPUs; i++) {
@@ -30,8 +29,12 @@ if (cluster.isMaster) {
     startExpress();
 
 }
+
 function startExpress() {
     const app = express()
+
+    initConnection(process.env)
+
     app.listen(8080)
     app.use(require('cors')({
         origin: '*'
@@ -44,3 +47,4 @@ function startExpress() {
     app.use('/submission', require('./routers/Submission.router'))
     app.use('/user', require('./routers/User.router'))
 }
+
