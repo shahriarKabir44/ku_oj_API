@@ -2,7 +2,7 @@ const { connection } = require('./dbConnection')
 
 function Promisify({ sql, values }) {
     return new Promise(function (resolve, reject) {
-        connection.query({
+        connection.connection.query({
             sql, values
         }, (err, rows) => {
             if (err) reject(err)

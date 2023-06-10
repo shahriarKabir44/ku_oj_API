@@ -1,9 +1,9 @@
 const mysql = require('mysql2');
-let connection;
+let connection = {};
 
 
 function initConnection(env) {
-    connection = mysql.createConnection({
+    connection.connection = mysql.createConnection({
         host: 'localhost',
         user: 'root',
         password: env.dbPassword,
