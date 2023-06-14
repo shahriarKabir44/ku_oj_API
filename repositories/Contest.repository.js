@@ -130,7 +130,6 @@ module.exports = class ContestRepository {
                 sql: `select * from contest where id=?;`,
                 values: [contestId]
             }).then(([contestInfo]) => {
-                console.log(contestInfo)
                 data = { ...data, ...contestInfo }
             }),
             Promisify({
