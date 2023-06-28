@@ -2,4 +2,6 @@
 1687950936140create-table_contest.js
 1687951042633create-table_problem.js
 1687951110792create-table_contestResult.js
-1687951228038create-table_result.js
+1687951410943create-table_registration.js
+1687951420118create-table_submission.js
+1687951424935create-table_submissionResult.js
