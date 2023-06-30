@@ -1,5 +1,4 @@
 const mysql = require('mysql2');
-const executeSqlAsync = require('./promisify')
 let primaryConnectionObject = {
     connection: null
 };

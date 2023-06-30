@@ -103,4 +103,9 @@ ContestRouter.get('/getProblemFiles/:problemId', async (req, res) => {
 })
 
 
+ContestRouter.post('/updateContestInfo', (req, res) => {
+    ContestRepository.updateContestInfo(req.body)
+})
+
+
 module.exports = ContestRouter

@@ -1,16 +1,16 @@
-const Promisify = require('../utils/promisify')
+const { executeSqlAsync } = require('../utils/executeSqlAsync')
 const { getFiles } = require('../executors/getFiles')
 const QueryBuilder = require('../utils/queryBuilder')
 module.exports = class SubmissionRepository {
     static async getPreviousSubmissionsOfProblem({ problemId, userId }) {
-        return Promisify({
+        return executeSqlAsync({
             sql: `SELECT * FROM submission WHERE
                  problemId=?  and submittedBy=? order by time desc; `,
             values: [problemId, userId]
         })
     }
     static async getSubmissionInfo({ contestId, submissionId, viewer }) {
-        let [contest] = await Promisify({
+        let [contest] = await executeSqlAsync({
             sql: `select * from contest where id=?;`,
             values: [contestId]
         })
@@ -20,7 +20,7 @@ module.exports = class SubmissionRepository {
             success: false,
             type: 1
         }
-        let [submission] = await Promisify({
+        let [submission] = await executeSqlAsync({
             sql: `SELECT
                 id,
                 time,
@@ -75,11 +75,11 @@ module.exports = class SubmissionRepository {
 
     }
     static async createSubmission({ problemId, submittedBy, time, languageName, contestId }) {
-        await Promisify({
+        await executeSqlAsync({
             sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId']),
             values: [problemId, submittedBy, time, languageName, contestId]
         })
-        let [{ submissionId }] = await Promisify({
+        let [{ submissionId }] = await executeSqlAsync({
             sql: `select max(id) as submissionId
                     from submission
                     WHERE
@@ -89,7 +89,7 @@ module.exports = class SubmissionRepository {
         return submissionId
     }
     static async setSubmissionFileURL({ id, submissionFileURL }) {
-        Promisify({
+        executeSqlAsync({
             sql: `update submission set submissionFileURL=?
                 where id=?;`,
             values: [submissionFileURL, id]

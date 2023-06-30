@@ -1,6 +1,6 @@
 const { connection } = require('./dbConnection')
 
-function Promisify({ sql, values }) {
+function executeSqlAsync({ sql, values }) {
     return new Promise(function (resolve, reject) {
         connection.connection.query({
             sql, values
@@ -10,4 +10,4 @@ function Promisify({ sql, values }) {
         })
     })
 }
-module.exports = Promisify
+module.exports = { executeSqlAsync }

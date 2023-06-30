@@ -1,5 +1,5 @@
 const runPython = require("../executors/runPython");
-const Promisify = require("../utils/promisify");
+const executeSqlAsync = require("../utils/executeSqlAsync");
 const QueryBuilder = require("../utils/queryBuilder");
 
 module.exports = class JudgeRepository {
@@ -17,7 +17,7 @@ module.exports = class JudgeRepository {
         }
     }
     static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial) {
-        await Promisify({
+        await executeSqlAsync({
             sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
                  where id=?;`,
             values: [this.getVertictName(status), execTime, submissionId]
@@ -38,14 +38,14 @@ module.exports = class JudgeRepository {
 
 
     static async setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial) {
-        const [{ acCounter }] = await Promisify({
+        const [{ acCounter }] = await executeSqlAsync({
             sql: `select count(id) as acCounter from submission where verdict='AC' and
                     problemId=? and submittedBy=?;`,
             values: [problemId, userId]
 
         })
         if (acCounter == 1) {
-            Promisify({
+            executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [problemId]
             })
@@ -54,14 +54,14 @@ module.exports = class JudgeRepository {
         }
     }
     static async updateContestResult(contestId, contestantId, points, problemId, isOfficial) {
-        let [contestResult] = await Promisify({
+        let [contestResult] = await executeSqlAsync({
             sql: `select * from contestResult where contestId=? and contestantId=?;`,
             values: [contestId, contestantId]
         })
         if (!contestResult) {
             let description = {}
             description[problemId] = points
-            await Promisify({
+            await executeSqlAsync({
                 sql: `insert into contestResult(points,description,contestId,contestantId) values(?,?,?,?) ;`,
                 values: [points, JSON.stringify(description), contestId, contestantId]
             })
@@ -70,13 +70,13 @@ module.exports = class JudgeRepository {
             let { description } = contestResult
             description = JSON.parse(description)
             description[problemId] = points
-            await Promisify({
+            await executeSqlAsync({
                 sql: `update contestResult set points=points+?, description=? where contestId=? and contestantId=?;`,
                 values: [points, JSON.stringify(description), contestId, contestantId]
             })
         }
         if (!isOfficial) return
-        Promisify({
+        executeSqlAsync({
             sql: `update contestResult set official_points=points,official_description=description
                   where contestId=? and contestantId=?;`,
             values: [contestId, contestantId]
@@ -86,7 +86,7 @@ module.exports = class JudgeRepository {
     static async updateSubmissionResult(userId, problemId, points, isOfficial) {
         let finalVerdict = points > 0 ? 1 : 0;
 
-        await Promisify({
+        await executeSqlAsync({
             sql: `INSERT into submissionResult(
                                 contestantId,
                                 problemId,
@@ -98,7 +98,7 @@ module.exports = class JudgeRepository {
             values: [userId, problemId, points, finalVerdict, points, finalVerdict, finalVerdict]
         })
         if (!isOfficial) return
-        Promisify({
+        executeSqlAsync({
             sql: `update submissionResult set finalVerdictOfficial=finalVerdict, official_points=points
                 where problemId=? and contestantId=? ;`,
             values: [problemId, userId]
