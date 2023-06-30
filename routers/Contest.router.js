@@ -94,11 +94,12 @@ ContestRouter.post('/getContestStandings', (req, res) => {
 })
 
 
-ContestRouter.get('/getProblemFiles/:problemId', (req, res) => {
-    getFiles(`/testcases/${req.params.problemId}/in.txt`)
-        .then(file => {
-            res.send(file)
-        })
+ContestRouter.get('/getProblemFiles/:problemId', async (req, res) => {
+    let testcase = await getFiles(`/testcases/${req.params.problemId}/in.txt`)
+    let output = await getFiles(`/testcases/${req.params.problemId}/out.txt`)
+    testcase = testcase.toString()
+    output = output.toString()
+    res.send({ testcase, output })
 })
 
 
