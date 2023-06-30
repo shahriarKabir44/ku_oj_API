@@ -24,4 +24,4 @@ async function validateJWT(token) {
 
     }
 }
-module.exports = validateJWT
+module.exports = { validateJWT }

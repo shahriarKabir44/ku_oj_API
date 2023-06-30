@@ -1,4 +1,6 @@
+const { getFiles } = require('../executors/getFiles')
 const ContestRepository = require('../repositories/Contest.repository')
+const { validateJWT } = require('../utils/validateJWT')
 
 const ContestRouter = require('express').Router()
 
@@ -90,5 +92,14 @@ ContestRouter.post('/getContestStandings', (req, res) => {
             res.send(standings)
         })
 })
+
+
+ContestRouter.get('/getProblemFiles/:problemId', (req, res) => {
+    getFiles(`/testcases/${req.params.problemId}/in.txt`)
+        .then(file => {
+            res.send(file)
+        })
+})
+
 
 module.exports = ContestRouter

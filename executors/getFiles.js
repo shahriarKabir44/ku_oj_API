@@ -1,4 +1,12 @@
 const fs = require('fs');
-module.exports = function (dir) {
-    return fs.readFileSync(__dirname + dir, 'utf8');
+async function getFiles(dir) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(__dirname + dir, (err, data) => {
+            if (err) reject(err)
+            if (data) resolve(data)
+        })
+    })
+
 }
+
+module.exports = { getFiles }

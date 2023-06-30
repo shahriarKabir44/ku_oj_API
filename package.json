@@ -6,8 +6,7 @@
   "scripts": {
     "migrator": "node Nodejs_Database_Migrator/index",
     "test": "nodemon",
-    "start": "node server.js",
-    "createSchemaBackup": "mysqldump -h localhost -u root -p --no-data ku_oj > /home/shahriarkabir/Desktop/stuff/ku_oj/ku_oj_API/ku_oj.sql"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",

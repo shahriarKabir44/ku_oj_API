@@ -1,5 +1,5 @@
 const Promisify = require('../utils/promisify')
-const getFile = require('../executors/getFiles')
+const { getFiles } = require('../executors/getFiles')
 const QueryBuilder = require('../utils/queryBuilder')
 module.exports = class SubmissionRepository {
     static async getPreviousSubmissionsOfProblem({ problemId, userId }) {
@@ -61,7 +61,7 @@ module.exports = class SubmissionRepository {
             return {
                 success: true,
                 submission,
-                code: getFile(submission.submissionFileURL)
+                code: await getFiles(submission.submissionFileURL)
             }
         }
         else {
