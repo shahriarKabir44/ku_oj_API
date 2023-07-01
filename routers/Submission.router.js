@@ -17,7 +17,10 @@ SubmissionRouter.post('/submit', [(req, res, next) => {
     let data = JSON.parse(req.headers.additionals)
     data.submissionId = req.submissionId
     data.submissionFileURL = req.submissionFileURL
-    SubmissionRepository.setSubmissionFileURL({ id: req.submissionId, submissionFileURL: req.submissionFileURL })
+    SubmissionRepository.setSubmissionFileURL({
+        id: req.submissionId,
+        submissionFileURL: req.submissionFileURL
+    })
 
     JudgeRepository.judgeSubmission(data)
         .then(resp => {

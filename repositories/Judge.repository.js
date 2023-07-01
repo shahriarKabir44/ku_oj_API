@@ -1,11 +1,10 @@
 const runPython = require("../executors/runPython");
-const executeSqlAsync = require("../utils/executeSqlAsync");
+const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const QueryBuilder = require("../utils/queryBuilder");
 
 module.exports = class JudgeRepository {
 
     static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial }) {
-
         try {
             const path = `/${submissionFileURL}`;
             const data = await runPython(problemId, path)
@@ -126,6 +125,36 @@ module.exports = class JudgeRepository {
                 return 'ERROR'
             case 4:
                 return 'TLE'
+
+        }
+    }
+
+    static async rejudgeProblemSubmissions({ problemId, score }) {
+        let submissions = await executeSqlAsync({
+            sql: `select * from submission 
+                    where submission.problemId=? 
+                    and submission.id in (select max(submission.id) from submission
+                    GROUP BY submission.submittedBy
+                );`,
+            values: [problemId]
+        })
+
+    }
+    static async rejudgeSubmission(submission, maxScore) {
+        try {
+            const path = `/${submission.submissionFileURL}`;
+            const data = await runPython(submission.problemId, path)
+            this.setVerdict(submission.contestId,
+                submission.submittedBy,
+                submission.problemId,
+                submission.id,
+                data.type,
+                submission.execTime,
+                maxScore,
+                submission.isOfficial)
+
+        }
+        catch (e) {
 
         }
     }

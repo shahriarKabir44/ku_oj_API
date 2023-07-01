@@ -152,7 +152,6 @@ module.exports = class ContestRepository {
 
 
     static updateContestInfo({ id, title, startTime, endTime, code }) {
-        console.log(title)
         return executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('contest',
                 ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
