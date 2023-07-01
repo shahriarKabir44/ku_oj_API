@@ -8,5 +8,7 @@ async function getFiles(dir) {
     })
 
 }
-
-module.exports = { getFiles }
+function getFileDir() {
+    return __dirname
+}
+module.exports = { getFiles, getFileDir }
