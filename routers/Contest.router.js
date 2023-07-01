@@ -102,5 +102,12 @@ ContestRouter.post('/updateContestInfo', (req, res) => {
     ContestRepository.updateContestInfo(req.body)
 })
 
+ContestRouter.post('/updateProblemInfo', (req, res) => {
+    ContestRepository.updateProblemInfo(req.body)
+        .then(() => {
+            res.send({ success: 1 })
+        })
+})
+
 
 module.exports = ContestRouter

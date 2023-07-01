@@ -162,7 +162,7 @@ module.exports = class ContestRepository {
     static async updateProblemInfo({ id, title, code, points }) {
         return executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('problem',
-                ['title', 'code', 'points']) + `where id=?;`,
+                ['title', 'code', 'points']) + ` where id=?;`,
             values: [title, code, points, id]
         })
     }

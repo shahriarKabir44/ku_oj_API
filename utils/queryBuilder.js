@@ -10,7 +10,7 @@ class QueryBuilder {
     }
 
     static createUpdateQuery(tableName, fields) {
-        fields = fields.map(el => el + '=?')
+        fields = fields.map(el => el + '=? ')
         let updateList = fields.toString()
 
         return `update ${tableName} set ${updateList}`
