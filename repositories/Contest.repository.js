@@ -64,6 +64,14 @@ module.exports = class ContestRepository {
                   contestId=?;`,
             values: [contestId]
         })
+
+        this.setProblemFilesURL({
+            problemId: newId,
+            outputFileURL: `/testcases/${newId}/out.txt`,
+            testcaseFileURL: `/testcases/${newId}/in.txt`,
+            statementFileURL: `/${newId}.pdf`
+        })
+
         return newId
     }
     static async setProblemFilesURL({ problemId, outputFileURL, testcaseFileURL, statementFileURL }) {
@@ -144,8 +152,19 @@ module.exports = class ContestRepository {
 
 
     static updateContestInfo({ id, title, startTime, endTime, code }) {
-
+        console.log(title)
+        return executeSqlAsync({
+            sql: QueryBuilder.createUpdateQuery('contest',
+                ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
+            values: [title, startTime, endTime, code, id]
+        })
     }
-
+    static async updateProblemInfo({ id, title, code, points }) {
+        return executeSqlAsync({
+            sql: QueryBuilder.createUpdateQuery('problem',
+                ['title', 'code', 'points']) + `where id=?;`,
+            values: [title, code, points, id]
+        })
+    }
 
 }

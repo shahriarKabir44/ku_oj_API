@@ -40,12 +40,7 @@ ContestRouter.post('/createProblem', (req, res) => {
         })
 })
 
-ContestRouter.post('/setProblemFilesURL', (req, res) => {
-    ContestRepository.setProblemFilesURL(req.body)
-        .then(() => {
-            res.send({ success: 1 })
-        })
-})
+
 ContestRouter.get('/getContestProblems/:id', (req, res) => {
     ContestRepository.getContestProblems(req.params)
         .then(contestProblems => {
