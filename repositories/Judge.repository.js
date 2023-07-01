@@ -4,18 +4,18 @@ const QueryBuilder = require("../utils/queryBuilder");
 
 module.exports = class JudgeRepository {
 
-    static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial }) {
+    static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time }) {
         try {
             const path = `/${submissionFileURL}`;
             const data = await runPython(problemId, path)
-            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial)
+            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial, time)
             return { ...data, id: submissionId }
         } catch (error) {
-            this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5, isOfficial)
+            this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5, isOfficial, time)
             return { ...error, id: submissionId }
         }
     }
-    static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial) {
+    static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial, submissionTime) {
         await executeSqlAsync({
             sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
                  where id=?;`,
@@ -23,7 +23,7 @@ module.exports = class JudgeRepository {
         })
         if (status == 1) { //when AC
 
-            this.setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial)
+            this.setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial, submissionTime)
         }
         else {
             this.setScoreWhenRejected(problemId, userId, points, contestId, isOfficial)
@@ -36,7 +36,7 @@ module.exports = class JudgeRepository {
     }
 
 
-    static async setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial) {
+    static async setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial, submissionTime) {
         const [{ acCounter }] = await executeSqlAsync({
             sql: `select count(id) as acCounter from submission where verdict='AC' and
                     problemId=? and submittedBy=?;`,
@@ -44,11 +44,16 @@ module.exports = class JudgeRepository {
 
         })
         if (acCounter == 1) {
+            const [problem] = await executeSqlAsync({
+                sql: `select * from problem where id=?;`,
+                values: [problemId]
+            })
+
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [problemId]
             })
-            this.updateSubmissionResult(userId, problemId, points, isOfficial)
+            this.updateSubmissionResult(userId, problemId, points, isOfficial, submissionTime)
             this.updateContestResult(contestId, userId, points, problemId, isOfficial)
         }
     }
@@ -82,7 +87,7 @@ module.exports = class JudgeRepository {
         })
     }
 
-    static async updateSubmissionResult(userId, problemId, points, isOfficial) {
+    static async updateSubmissionResult(userId, problemId, points, isOfficial, submissionTime) {
         let finalVerdict = points > 0 ? 1 : 0;
 
         await executeSqlAsync({
@@ -152,10 +157,14 @@ module.exports = class JudgeRepository {
                 submission.execTime,
                 maxScore,
                 submission.isOfficial)
+            return { ...data, id: submission.id }
 
         }
-        catch (e) {
-
+        catch (error) {
+            this.setVerdict(submission.contestId,
+                submission.submittedBy,
+                submission.problemId, submission.type, error.type, 'N/A', -5, submission.isOfficial)
+            return { ...error, id: submission.id }
         }
     }
 }

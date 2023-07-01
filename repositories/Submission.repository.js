@@ -74,10 +74,10 @@ module.exports = class SubmissionRepository {
         }
 
     }
-    static async createSubmission({ problemId, submittedBy, time, languageName, contestId }) {
+    static async createSubmission({ problemId, submittedBy, time, languageName, contestId, isOfficial }) {
         await executeSqlAsync({
-            sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId']),
-            values: [problemId, submittedBy, time, languageName, contestId]
+            sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId', 'isOfficial']),
+            values: [problemId, submittedBy, time, languageName, contestId, isOfficial]
         })
         let [{ submissionId }] = await executeSqlAsync({
             sql: `select max(id) as submissionId
