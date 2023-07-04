@@ -76,7 +76,10 @@ async function execInput(processChild, args) {
 
     })
 }
-module.exports = function (problemId, filePath) {
+
+
+
+function runPython(problemId, filePath) {
     let errorMessage = []
     return new Promise((resolve, reject) => {
 
@@ -139,3 +142,4 @@ module.exports = function (problemId, filePath) {
 }
 
 
+module.exports = { runPython }

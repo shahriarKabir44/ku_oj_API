@@ -1,4 +1,4 @@
-const runPython = require("../executors/runPython");
+const { runPython } = require("../executors/runPython");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const QueryBuilder = require("../utils/queryBuilder");
 
@@ -8,19 +8,15 @@ module.exports = class JudgeRepository {
         try {
             const path = `/${submissionFileURL}`;
             const data = await runPython(problemId, path)
-            this.setVerdict(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial, time)
+            this.setVerdictAndAssignScore(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial, time)
             return { ...data, id: submissionId }
         } catch (error) {
-            this.setVerdict(contestId, userId, problemId, submissionId, error.type, 'N/A', -5, isOfficial, time)
+            this.setVerdictAndAssignScore(contestId, userId, problemId, submissionId, error.type, 'N/A', -5, isOfficial, time)
             return { ...error, id: submissionId }
         }
     }
-    static async setVerdict(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial, submissionTime) {
-        await executeSqlAsync({
-            sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
-                 where id=?;`,
-            values: [this.getVertictName(status), execTime, submissionId]
-        })
+    static async setVerdictAndAssignScore(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial, submissionTime) {
+        this.setVerdict({ contestId, userId, problemId, submissionId, status, execTime, points, isOfficial, submissionTime })
         if (status == 1) { //when AC
 
             this.setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial, submissionTime)
@@ -28,6 +24,14 @@ module.exports = class JudgeRepository {
         else {
             this.setScoreWhenRejected(problemId, userId, points, contestId, isOfficial)
         }
+    }
+    static async setVerdict({ submissionId, status, execTime }) {
+        executeSqlAsync({
+            sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
+                 where id=?;`,
+            values: [this.getVertictName(status), execTime, submissionId]
+        })
+
     }
 
     static async setScoreWhenRejected(problemId, userId, points, contestId, isOfficial) {
@@ -155,7 +159,7 @@ module.exports = class JudgeRepository {
         try {
             const path = `/${submission.submissionFileURL}`;
             const data = await runPython(submission.problemId, path)
-            this.setVerdict(submission.contestId,
+            this.setVerdictAndAssignScore(submission.contestId,
                 submission.submittedBy,
                 submission.problemId,
                 submission.id,
@@ -168,7 +172,7 @@ module.exports = class JudgeRepository {
 
         }
         catch (error) {
-            this.setVerdict(submission.contestId,
+            this.setVerdictAndAssignScore(submission.contestId,
                 submission.submittedBy,
                 submission.problemId,
                 submission.type,
