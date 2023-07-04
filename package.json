@@ -4,7 +4,6 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "migrator": "node Nodejs_Database_Migrator/index",
     "test": "nodemon",
     "start": "node server.js"
   },

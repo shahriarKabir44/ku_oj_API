@@ -1,7 +1,12 @@
 const { runPython } = require("../executors/runPython");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const QueryBuilder = require("../utils/queryBuilder");
-
+const {
+    Worker,
+    isMainThread,
+    parentPort,
+    workerData
+} = require("worker_threads");
 module.exports = class JudgeRepository {
 
     static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time }) {
@@ -144,44 +149,15 @@ module.exports = class JudgeRepository {
         }
     }
 
-    static async rejudgeProblemSubmissions({ problemId, score }) {
-        let submissions = await executeSqlAsync({
-            sql: `select * from submission 
-                    where submission.problemId=? 
-                    and submission.id in (select max(submission.id) from submission
-                    GROUP BY submission.submittedBy
-                );`,
-            values: [problemId]
+    static async rejudgeProblemSubmissions({ problemId }) {
+
+        let worker = new Worker(__dirname + '/workerThreads/RejudgeProblemsSubmissions.worker.js')
+
+        worker.postMessage({
+            problemId
         })
 
-    }
-    static async rejudgeSubmission(submission, maxScore) {
-        try {
-            const path = `/${submission.submissionFileURL}`;
-            const data = await runPython(submission.problemId, path)
-            this.setVerdictAndAssignScore(submission.contestId,
-                submission.submittedBy,
-                submission.problemId,
-                submission.id,
-                data.type,
-                submission.execTime,
-                maxScore,
-                submission.isOfficial,
-                submission.time)
-            return { ...data, id: submission.id }
 
-        }
-        catch (error) {
-            this.setVerdictAndAssignScore(submission.contestId,
-                submission.submittedBy,
-                submission.problemId,
-                submission.type,
-                error.type,
-                'N/A',
-                -5,
-                submission.isOfficial,
-                submission.time)
-            return { ...error, id: submission.id }
-        }
     }
+
 }

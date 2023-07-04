@@ -87,7 +87,6 @@ function runPython(problemId, filePath) {
             const testcases = readFileLines(`${__dirname}/testcases/${problemId}/in.txt`)
             const expectedOutputs = readFileLines(`${__dirname}/testcases/${problemId}/out.txt`).split('\n')
             let outputs = []
-
             const child = spawn("python", [__dirname + filePath]);
             child.on('error', (e) => {
             })

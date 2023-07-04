@@ -43,5 +43,8 @@ SubmissionRouter.post('/getSubmissionInfo', (req, res) => {
 
 })
 
-
+SubmissionRouter.get('/rejudgeProblemSubmissions', (req, res) => {
+    JudgeRepository.rejudgeProblemSubmissions({ problemId: 50 })
+    res.send({ data: 1 })
+})
 module.exports = SubmissionRouter
