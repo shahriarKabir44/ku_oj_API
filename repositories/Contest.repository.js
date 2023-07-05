@@ -54,10 +54,10 @@ module.exports = class ContestRepository {
         })
         return contestId
     }
-    static async createProblem({ contestId, title, points, code }) {
+    static async createProblem({ contestId, title, points, code, createdOn }) {
         await executeSqlAsync({
             sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn"]),
-            values: [contestId, title, points * 100, code, (new Date()) * 1]
+            values: [contestId, title, points * 100, code, createdOn]
         })
         let [{ newId }] = await executeSqlAsync({
             sql: `select max(id) as newId from problem where 
