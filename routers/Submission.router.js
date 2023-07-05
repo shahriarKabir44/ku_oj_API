@@ -43,8 +43,8 @@ SubmissionRouter.post('/getSubmissionInfo', (req, res) => {
 
 })
 
-SubmissionRouter.get('/rejudgeContestSubmissions', (req, res) => {
-    JudgeRepository.rejudgeContestSubmissions({ contestId: 43 })
+SubmissionRouter.get('/rejudgeContestSubmissions/:contestId', (req, res) => {
+    JudgeRepository.rejudgeContestSubmissions(req.params)
     res.send({ data: 1 })
 })
 module.exports = SubmissionRouter
