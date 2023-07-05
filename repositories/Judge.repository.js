@@ -60,7 +60,6 @@ module.exports = class JudgeRepository {
             values: [problemId, userId]
 
         })
-        console.log('accounter', acCounter)
         if (acCounter == 1) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
@@ -149,12 +148,12 @@ module.exports = class JudgeRepository {
         }
     }
 
-    static async rejudgeProblemSubmissions({ problemId }) {
+    static async rejudgeContestSubmissions({ contestId }) {
 
-        let worker = new Worker(__dirname + '/workerThreads/RejudgeProblemsSubmissions.worker.js')
+        let worker = new Worker(__dirname + '/workerThreads/RejudgeAllSubmissionOfContest.worker.js')
 
         worker.postMessage({
-            problemId
+            contestId
         })
 
 

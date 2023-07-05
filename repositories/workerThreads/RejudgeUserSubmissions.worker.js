@@ -25,7 +25,6 @@ async function judgeSubmissions(submissions, problem) {
 
     submissions.forEach((submission) => {
         promises.push((async () => {
-            console.log(submission.language == 'python')
             if (submission.language == 'python') {
                 try {
                     let data = await runPython(submission.problemId, submission.submissionFileURL)
@@ -51,7 +50,6 @@ async function judgeSubmissions(submissions, problem) {
     })
 
     await Promise.all(promises)
-    console.log(submissions, 'herez')
     setScores(submissions.filter(submission => submission.isOfficial == 1), problem, true)
     setScores(submissions.filter(submission => submission.isOfficial == 0), problem, false)
 
