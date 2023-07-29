@@ -15,8 +15,9 @@ initConnection(process.env)
 parentPort.on('message', ({ contestId }) => {
     ContestRepository.getContestProblems({ id: contestId })
         .then((problems) => {
+
             problems.forEach(problem => {
-                const worker = new Worker(__dirname + '/RejudgeProblemsSubmissions.worker.js')
+                const worker = new Worker(__dirname + '/RejudgeProblemsSubmissions.worker.js');
                 worker.postMessage(problem)
             })
         })

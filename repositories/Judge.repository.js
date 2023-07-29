@@ -45,11 +45,16 @@ module.exports = class JudgeRepository {
     }
 
     static async calculateScore(problemId, submissionTime) {
-        const [problem] = await executeSqlAsync({
+        let [problem] = await executeSqlAsync({
             sql: `select * from problem where id=?;`,
             values: [problemId]
         })
-        let timeDiff = Math.max(parseInt((submissionTime - problem.createdOn) / (3600 * 1000 * 10)), 0)
+        let [contest] = await executeSqlAsync({
+            sql: `select * from contest where id=?;`,
+            values: [problem.contestId]
+        })
+
+        let timeDiff = Math.max(parseInt((submissionTime - contest.startTime) / (3600 * 1000 * 10)), 0)
 
         return Math.max(problem.points - timeDiff * 5, 10)
     }
