@@ -21,13 +21,14 @@ module.exports = class JudgeRepository {
         }
     }
     static async setVerdictAndAssignScore(contestId, userId, problemId, submissionId, status, execTime, points, isOfficial, submissionTime) {
+        const verdict = this.getVertictName(status)
         this.setVerdict({ contestId, userId, problemId, submissionId, status, execTime, points, isOfficial, submissionTime })
         if (status == 1) { //when AC
 
-            this.setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial, submissionTime)
+            this.setScoreWhenAccepted(problemId, userId, contestId, isOfficial, submissionTime, verdict)
         }
         else {
-            this.setScoreWhenRejected(problemId, userId, points, contestId, isOfficial)
+            this.setScoreWhenRejected(problemId, userId, points, contestId, isOfficial, verdict)
         }
     }
     static async setVerdict({ submissionId, status, execTime }) {
@@ -58,7 +59,7 @@ module.exports = class JudgeRepository {
 
         return Math.max(problem.points - timeDiff * 5, 10)
     }
-    static async setScoreWhenAccepted(problemId, userId, points, contestId, isOfficial, submissionTime) {
+    static async setScoreWhenAccepted(problemId, userId, contestId, isOfficial, submissionTime, verdict) {
         const [{ acCounter }] = await executeSqlAsync({
             sql: `select count(id) as acCounter from submission where verdict='AC' and
                     problemId=? and submittedBy=?;`,
@@ -72,11 +73,11 @@ module.exports = class JudgeRepository {
             })
 
             const score = await this.calculateScore(problemId, submissionTime)
-            this.updateSubmissionResult(userId, problemId, score, isOfficial)
-            this.updateContestResult(contestId, userId, score, problemId, isOfficial)
+            this.updateSubmissionResult(userId, problemId, score, isOfficial, verdict)
+            this.updateContestResult(contestId, userId, score, problemId, isOfficial, verdict)
         }
     }
-    static async updateContestResult(contestId, contestantId, points, problemId, isOfficial) {
+    static async updateContestResult(contestId, contestantId, points, problemId, isOfficial, verdict) {
         let [contestResult] = await executeSqlAsync({
             sql: `select * from contestResult where contestId=? and contestantId=?;`,
             values: [contestId, contestantId]
@@ -84,29 +85,33 @@ module.exports = class JudgeRepository {
         if (!contestResult) {
             let description = {}
             description[problemId] = points
+            let verdicts = {}
+            verdicts[problemId] = verdict
             await executeSqlAsync({
-                sql: `insert into contestResult(points,description,contestId,contestantId) values(?,?,?,?) ;`,
-                values: [points, JSON.stringify(description), contestId, contestantId]
+                sql: `insert into contestResult(points,description,contestId,contestantId,verdicts) values(?,?,?,?,?) ;`,
+                values: [points, JSON.stringify(description), contestId, contestantId, JSON.stringify(verdicts)]
             })
         }
         else {
-            let { description } = contestResult
+            let { description, verdicts } = contestResult
             description = JSON.parse(description)
             description[problemId] = points
+            verdicts[problemId] = verdict
+
             await executeSqlAsync({
-                sql: `update contestResult set points=points+?, description=? where contestId=? and contestantId=?;`,
-                values: [points, JSON.stringify(description), contestId, contestantId]
+                sql: `update contestResult set points=points+?, description=?, verdicts=? where contestId=? and contestantId=?;`,
+                values: [points, JSON.stringify(description), JSON.stringify(verdicts), contestId, contestantId]
             })
         }
         if (!isOfficial) return
         executeSqlAsync({
-            sql: `update contestResult set official_points=points,official_description=description
+            sql: `update contestResult set official_points=points,official_description=description, officialVerdicts=verdicts
                   where contestId=? and contestantId=?;`,
             values: [contestId, contestantId]
         })
     }
 
-    static async updateSubmissionResult(userId, problemId, points, isOfficial) {
+    static async updateSubmissionResult(userId, problemId, points, isOfficial, verdict) {
         let finalVerdict = points > 0 ? 1 : 0;
 
         await executeSqlAsync({

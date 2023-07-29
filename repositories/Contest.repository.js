@@ -126,7 +126,7 @@ module.exports = class ContestRepository {
     static async getContestStandings({ contestId, pageNumber, isOfficial }) {
         return executeSqlAsync({
             sql: `select contestId,contestantId, (select userName from user where user.id=contestantId) as contestantName,
-                points, description,official_description,official_points
+                points, description,official_description,official_points,verdicts, officialVerdicts
                 from contestResult where contestId=? order by ${!isOfficial ? 'points' : 'official_points'} desc limit ?,20 ; `,
             values: [contestId, pageNumber]
         })
