@@ -21,6 +21,7 @@ parentPort.on('message', ({ submissions, problem }) => {
  * @param {[any]} submissions 
  */
 async function judgeSubmissions(submissions, problem) {
+
     let promises = []
 
     submissions.forEach((submission) => {
@@ -107,13 +108,16 @@ async function setOfficialScores(submittedBy, problemId, score, verdict, contest
         sql: `select * from contestResult where contestId=? and contestantId=?;`,
         values: [contestId, submittedBy]
     })
-    let { official_description } = contestResult
+    let { official_description, officialVerdicts } = contestResult
+    officialVerdicts = JSON.parse(officialVerdicts)
+    officialVerdicts[problemId] = verdict
     official_description = JSON.parse(official_description)
     official_description[problemId] = score
     executeSqlAsync({
-        sql: `update contestResult set official_points=?,official_description=?
+        sql: `update contestResult set official_points=?,official_description=?, officialVerdicts=?
                   where contestId=? and contestantId=?;`,
-        values: [score, JSON.stringify(official_description), contestId, submittedBy]
+        values: [score, JSON.stringify(official_description),
+            JSON.stringify(officialVerdicts), contestId, submittedBy]
     })
 }
 
@@ -129,12 +133,14 @@ async function setUnofficialScores(submittedBy, problemId, score, verdict, conte
         sql: `select * from contestResult where contestId=? and contestantId=?;`,
         values: [contestId, submittedBy]
     })
-    let { description } = contestResult
+    let { description, verdicts } = contestResult
+    verdicts = JSON.parse(verdict)
     description = JSON.parse(description)
+    verdicts[problemId] = verdict
     description[problemId] = score
     executeSqlAsync({
-        sql: `update contestResult set points=?,description=?
+        sql: `update contestResult set points=?,description=?,verdicts=?
                   where contestId=? and contestantId=?;`,
-        values: [score, JSON.stringify(description), contestId, submittedBy]
+        values: [score, JSON.stringify(description), JSON.stringify(description), contestId, submittedBy]
     })
 }
