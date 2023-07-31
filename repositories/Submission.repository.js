@@ -95,5 +95,31 @@ module.exports = class SubmissionRepository {
             values: [submissionFileURL, id]
         })
     }
+    static async getContestSubmissions({ contestId, pageNumber }) {
 
+        return executeSqlAsync({
+            sql: `select
+                    id,
+                    time,
+                    verdict,
+                    language,
+                    execTime,
+                    submittedBy,
+                    problemId, (
+                        select title
+                        from problem
+                        where
+                            problem.id = submission.problemId
+                    ) as problemName,
+                    ( select userName
+                        from user
+                        where
+                            user.id = submission.submittedBy
+                    ) as author
+                from submission
+                where contestId = ?
+                order by time desc LIMIT ?,20;`,
+            values: [contestId, pageNumber]
+        })
+    }
 }

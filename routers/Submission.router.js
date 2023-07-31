@@ -45,6 +45,13 @@ SubmissionRouter.post('/getSubmissionInfo', (req, res) => {
 
 })
 
+SubmissionRouter.get('/getContestSubmissions/:contestId/:pageNumber', (req, res) => {
+    SubmissionRepository.getContestSubmissions(req.params)
+        .then(submissions => {
+            res.send(submissions)
+        })
+})
+
 SubmissionRouter.get('/rejudgeContestSubmissions/:contestId', (req, res) => {
     JudgeRepository.rejudgeContestSubmissions(req.params)
     res.send({ data: 1 })
