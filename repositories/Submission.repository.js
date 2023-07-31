@@ -95,4 +95,5 @@ module.exports = class SubmissionRepository {
             values: [submissionFileURL, id]
         })
     }
+
 }

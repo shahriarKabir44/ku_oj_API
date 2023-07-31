@@ -41,7 +41,7 @@ module.exports = class UserRepository {
             values: [id]
         })
     }
-    static async getContestSubmissions({ contestId, userId }) {
+    static async getUsersContestSubmissions({ contestId, userId }) {
         return executeSqlAsync({
             sql: `select id,time,verdict,language, execTime,problemId, (select title from problem
                 where problem.id=submission.problemId

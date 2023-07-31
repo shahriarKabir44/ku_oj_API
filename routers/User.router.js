@@ -39,8 +39,8 @@ UserRouter.get('/getHostedContests/:id', (req, res) => {
         })
 })
 
-UserRouter.post('/getContestSubmissions', (req, res) => {
-    UserRepository.getContestSubmissions(req.body)
+UserRouter.post('/getUsersContestSubmissions', (req, res) => {
+    UserRepository.getUsersContestSubmissions(req.body)
         .then(contests => {
             res.send(contests)
         })
