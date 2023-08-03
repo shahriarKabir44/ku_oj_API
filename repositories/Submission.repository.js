@@ -119,7 +119,7 @@ module.exports = class SubmissionRepository {
                 from submission
                 where contestId = ?
                 order by time desc LIMIT ?,20;`,
-            values: [contestId, pageNumber]
+            values: [contestId, pageNumber * 1]
         })
     }
 }
