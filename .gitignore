@@ -1,5 +1,7 @@
 /node_modules
-/executors/*
+/executors/submissions/*
+/executors/testcases/*
+
 
 /problemStatements/*
 .env.dev

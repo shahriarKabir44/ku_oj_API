@@ -10,6 +10,12 @@ const storage = multer.diskStorage({
             const { postedby, contestid } = req.headers
             path += `/submissions/${contestid}/${postedby}/${problemid}`
             tempPath += `/submissions/${contestid}/${postedby}/${problemid}`
+            const { submissionid, ext } = req.headers
+
+            if (ext == 'cpp') {
+                path += `/${submissionid}`
+                tempPath += `/${submissionid}`
+            }
         }
         else if (filetype == 'testcaseoutput' || filetype == 'testcaseinput') {
             path += `/testcases/${problemid}`
@@ -18,6 +24,7 @@ const storage = multer.diskStorage({
         else if (filetype == 'statementfile') {
             path = `problemStatements/`
             tempPath = ``
+
         }
 
         if (!fs.existsSync(path)) {

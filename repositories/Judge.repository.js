@@ -1,3 +1,4 @@
+const { executeCPP } = require("../executors/executeCPP");
 const { runPython } = require("../executors/runPython");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const QueryBuilder = require("../utils/queryBuilder");
@@ -9,10 +10,17 @@ const {
 } = require("worker_threads");
 module.exports = class JudgeRepository {
 
-    static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time }) {
+    static async judgeSubmission({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time, ext }) {
         try {
             const path = `/${submissionFileURL}`;
-            const data = await runPython(problemId, path)
+            let data = null
+            if (ext == 'py') {
+                data = await runPython(problemId, path)
+            }
+            else if (ext == 'cpp') {
+                data = await executeCPP(problemId, path)
+                return
+            }
             this.setVerdictAndAssignScore(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial, time)
             return { ...data, id: submissionId }
         } catch (error) {
