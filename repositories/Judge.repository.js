@@ -7,7 +7,7 @@ const {
 
 } = require("worker_threads");
 module.exports = class JudgeRepository {
-    constructor({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time, ext }) {
+    constructor({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time, ext, verdictType, execTime }) {
         this.contestId = contestId
         this.userId = userId
         this.problemId = problemId
@@ -18,9 +18,9 @@ module.exports = class JudgeRepository {
         this.time = time
         this.ext = ext
         this.verdict = ""
-        this.verdictType = -1
+        this.verdictType = verdictType
         this.path = `${this.submissionFileURL}`;
-        this.execTime = 0
+        this.execTime = execTime
     }
     async judgeSubmission() {
         try {
@@ -50,7 +50,6 @@ module.exports = class JudgeRepository {
     }
 
     async setVerdict() {
-        console.log(this)
         executeSqlAsync({
             sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
                  where id=?;`,

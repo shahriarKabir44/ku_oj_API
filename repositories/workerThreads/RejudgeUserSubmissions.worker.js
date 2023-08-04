@@ -10,6 +10,7 @@ const { initConnection } = require("../../utils/dbConnection");
 require('dotenv').config()
 initConnection(process.env)
 const JudgeRepository = require("../Judge.repository");
+const { executeCPP } = require("../../executors/executeCPP");
 
 
 parentPort.on('message', ({ submissions, problem }) => {
@@ -25,27 +26,30 @@ async function judgeSubmissions(submissions, problem) {
     let promises = []
 
     submissions.forEach((submission) => {
+        const judgeRepository = new JudgeRepository({
+            submissionId: submission.id
+        })
         promises.push((async () => {
-            if (submission.language == 'python') {
-                try {
-                    let data = await runPython(submission.problemId, submission.submissionFileURL)
-                    JudgeRepository.setVerdict({
-                        submissionId: submission.id,
-                        status: data.type,
-                        execTime: data.execTime
-                    })
-                    submission.verdict = data.verdict
-                } catch (error) {
-                    JudgeRepository.setVerdict({
-                        submissionId: submission.id,
-                        status: error.type,
-                        execTime: error.execTime
-                    })
-                    submission.verdict = error.verdict
-
+            try {
+                let data = null
+                if (submission.language == 'python') {
+                    data = await runPython(submission.problemId, submission.submissionFileURL)
                 }
-
+                else if (submission.language == 'c++') {
+                    data = await executeCPP(submission.problemId, submission.submissionFileURL)
+                }
+                judgeRepository.verdictType = data.type
+                judgeRepository.execTime = data.execTime
+                judgeRepository.verdict = data.verdict
+                judgeRepository.setVerdict()
+            } catch (error) {
+                judgeRepository.verdictType = error.type
+                judgeRepository.execTime = error.execTime
+                judgeRepository.verdict = error.verdict
+                judgeRepository.setVerdict()
+                submission.verdict = error.verdict
             }
+
         })())
 
     })
