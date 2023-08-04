@@ -21,8 +21,8 @@ SubmissionRouter.post('/submit', [(req, res, next) => {
         id: req.submissionId,
         submissionFileURL: req.submissionFileURL
     })
-
-    JudgeRepository.judgeSubmission({ ...data, ext: req.headers.ext })
+    let judgeRepository = new JudgeRepository({ ...data, ext: req.headers.ext })
+    judgeRepository.judgeSubmission()
         .then(resp => {
             res.send(resp)
         })

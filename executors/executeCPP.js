@@ -18,6 +18,7 @@ async function executeCPP(problemId, filePath) {
                     resolve(data)
                 })
                 .catch(err => {
+                    console.log(err, "fsf")
                     reject(err)
                 })
 
