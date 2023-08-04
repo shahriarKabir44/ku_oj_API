@@ -12,7 +12,7 @@ async function runPython(problemId, filePath) {
         return await testOutput(child, problemId)
 
     } catch (error) {
-        error
+        return error
     }
 
 

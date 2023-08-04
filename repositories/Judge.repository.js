@@ -19,7 +19,6 @@ module.exports = class JudgeRepository {
             }
             else if (ext == 'cpp') {
                 data = await executeCPP(problemId, path)
-                return
             }
             this.setVerdictAndAssignScore(contestId, userId, problemId, submissionId, data.type, data.execTime, points, isOfficial, time)
             return { ...data, id: submissionId }
@@ -103,6 +102,7 @@ module.exports = class JudgeRepository {
         else {
             let { description, verdicts } = contestResult
             description = JSON.parse(description)
+            verdicts = JSON.parse(verdicts)
             description[problemId] = points
             verdicts[problemId] = verdict
 
