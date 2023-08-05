@@ -7,7 +7,19 @@ const {
 
 } = require("worker_threads");
 module.exports = class JudgeRepository {
-    constructor({ contestId, userId, problemId, submissionId, submissionFileURL, points, isOfficial, time, ext, verdictType, execTime }) {
+    constructor({
+        contestId,
+        userId,
+        problemId,
+        submissionId,
+        submissionFileURL,
+        points,
+        isOfficial,
+        time,
+        ext,
+        verdictType,
+        execTime
+    }) {
         this.contestId = contestId
         this.userId = userId
         this.problemId = problemId
@@ -78,7 +90,6 @@ module.exports = class JudgeRepository {
         return Math.max(problem.points - timeDiff * 5, 10)
     }
     async setScoreWhenAccepted() {
-        console.log(this)
         const [{ acCounter }] = await executeSqlAsync({
             sql: `select count(id) as acCounter from submission where verdict='AC' and
                     problemId=? and submittedBy=?;`,
@@ -97,12 +108,18 @@ module.exports = class JudgeRepository {
             this.updateContestResult()
         }
     }
-    async updateContestResult() {
-        let [contestResult] = await executeSqlAsync({
-            sql: `select * from contestResult where contestId=? and contestantId=?;`,
-            values: [this.contestId, this.userId]
-        })
-        if (!contestResult) {
+    async createContestRestult() {
+        if (this.isOfficial) {
+            let official_description = {}
+            let officialVerdicts = {}
+            officialVerdicts[this.problemId] = this.verdict
+            official_description[this.problemId] = this.score
+            executeSqlAsync({
+                sql: QueryBuilder.insertQuery('contestResult', ['official_points', 'official_description', 'contestId', 'contestantId', 'officialVerdicts']),
+                values: [this.score, JSON.stringify(official_description), this.contestId, this.userId, JSON.stringify(officialVerdicts)]
+            })
+        }
+        else {
             let description = {}
             description[this.problemId] = this.score
             let verdicts = {}
@@ -112,7 +129,29 @@ module.exports = class JudgeRepository {
                 values: [this.score, JSON.stringify(description), this.contestId, this.userId, JSON.stringify(verdicts)]
             })
         }
+    }
+    async updateContestResult() {
+        let [contestResult] = await executeSqlAsync({
+            sql: `select * from contestResult where contestId=? and contestantId=?;`,
+            values: [this.contestId, this.userId]
+        })
+        if (!contestResult) {
+            this.createContestRestult()
+        }
         else {
+            if (this.isOfficial) {
+                let { official_description, officialVerdicts } = contestResult
+                official_description = JSON.parse(description)
+                officialVerdicts = JSON.parse(officialVerdicts)
+                official_description[this.problemId] = this.points
+                officialVerdicts[this.problemId] = this.verdict
+
+                await executeSqlAsync({
+                    sql: `update contestResult set official_points=official_points+?, official_description=?, officialVerdicts=? where contestId=? and contestantId=?;`,
+                    values: [this.points, JSON.stringify(official_description), JSON.stringify(officialVerdicts), this.contestId, this.userId]
+                })
+                return
+            }
             let { description, verdicts } = contestResult
             description = JSON.parse(description)
             verdicts = JSON.parse(verdicts)
@@ -124,18 +163,28 @@ module.exports = class JudgeRepository {
                 values: [this.points, JSON.stringify(description), JSON.stringify(verdicts), this.contestId, this.userId]
             })
         }
-        if (!this.isOfficial) return
-        executeSqlAsync({
-            sql: `update contestResult set official_points=points,official_description=description, officialVerdicts=verdicts
-                  where contestId=? and contestantId=?;`,
-            values: [this.contestId, this.userId]
-        })
+
     }
 
     async updateSubmissionResult() {
-        let finalVerdict = this.score > 0 ? 1 : 0;
+        let finalVerdict = this.score > 0 ? 1 : 0
 
-        await executeSqlAsync({
+        if (this.isOfficial) {
+            executeSqlAsync({
+                sql: `INSERT into submissionResult(
+                                contestantId,
+                                problemId,
+                                official_points,
+                                finalVerdictOfficial
+                            )
+                        values(?, ?, ?,?) 
+                        on DUPLICATE key UPDATE official_points = official_points+?, finalVerdict=(select case when finalVerdictOfficial>? then finalVerdictOfficial else ? end )  ;`,
+                values: [this.userId, this.problemId, this.score, finalVerdict, this.score, finalVerdict, finalVerdict]
+            })
+            return
+        }
+
+        executeSqlAsync({
             sql: `INSERT into submissionResult(
                                 contestantId,
                                 problemId,
@@ -146,30 +195,10 @@ module.exports = class JudgeRepository {
                         on DUPLICATE key UPDATE points = points+?, finalVerdict=(select case when finalVerdict>? then finalVerdict else ? end )  ;`,
             values: [this.userId, this.problemId, this.score, finalVerdict, this.score, finalVerdict, finalVerdict]
         })
-        if (!this.isOfficial) return
-        executeSqlAsync({
-            sql: `update submissionResult set finalVerdictOfficial=finalVerdict, official_points=points
-                where problemId=? and contestantId=? ;`,
-            values: [this.problemId, this.userId]
-        })
+
     }
 
 
-
-    getVertictName() {
-        switch (this.verdictType) {
-            case 1:
-                return 'AC'
-                break;
-            case 2:
-                return 'WA'
-            case 3:
-                return 'ERROR'
-            case 4:
-                return 'TLE'
-
-        }
-    }
 
     static async rejudgeContestSubmissions({ contestId }) {
 
