@@ -14,137 +14,170 @@ const { executeCPP } = require("../../executors/executeCPP");
 
 
 parentPort.on('message', ({ submissions, problem }) => {
-    judgeSubmissions(submissions, problem)
+    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem)
+    userSubmissionReEvaluator.judgeSubmissions()
 })
 
-/**
- * 
- * @param {[any]} submissions 
- */
-async function judgeSubmissions(submissions, problem) {
-
-    let promises = []
-
-    submissions.forEach((submission) => {
-        const judgeRepository = new JudgeRepository({
-            submissionId: submission.id
-        })
-        promises.push((async () => {
-            try {
-                let data = null
-                if (submission.language == 'python') {
-                    data = await runPython(submission.problemId, submission.submissionFileURL)
-                }
-                else if (submission.language == 'c++') {
-                    data = await executeCPP(submission.problemId, submission.submissionFileURL)
-                }
-                judgeRepository.verdictType = data.type
-                judgeRepository.execTime = data.execTime
-                judgeRepository.verdict = data.verdict
-                judgeRepository.setVerdict()
-            } catch (error) {
-                judgeRepository.verdictType = error.type
-                judgeRepository.execTime = error.execTime
-                judgeRepository.verdict = error.verdict
-                judgeRepository.setVerdict()
-                submission.verdict = error.verdict
-            }
-
-        })())
-
-    })
-
-    await Promise.all(promises)
-    setScores(submissions.filter(submission => submission.isOfficial == 1), problem, true)
-    setScores(submissions.filter(submission => submission.isOfficial == 0), problem, false)
-
-}
-
-/**
- * 
- * @param {[any]} submissions 
- */
-async function setScores(submissions, problem, isOfficial = true) {
-    let oldestAcSubmission = null
-    let latestRejection = null
-    let rejectCounter = 0
-    if (!submissions.length)
-        return
-    submissions.forEach(submission => {
-        if (submission.verdict == 'AC') {
-            if (!oldestAcSubmission) {
-                oldestAcSubmission = submission;
-                return
-            }
-            if (oldestAcSubmission.time > submission.time) oldestAcSubmission = submission
-        }
-        else {
-            rejectCounter += 1
-            if (!latestRejection) {
-                latestRejection = submission
-                return
-            }
-            if (latestRejection.time < submission.time) latestRejection = submission
-        }
-    })
-    let score = -rejectCounter * 5
-
-    let finalVerdict = ''
-    if (latestRejection) finalVerdict = latestRejection.verdict
-    if (oldestAcSubmission) {
-        let timeSpan = (oldestAcSubmission.time - problem.createdOn) / (1000 * 60 * 10)
-        let obtained = Math.max(10, problem.points - timeSpan * 5)
-        score += obtained
-        finalVerdict = 'AC'
+class UserSubmissionReEvaluator {
+    constructor(_submissions, _problem) {
+        this.submissions = _submissions
+        this.problem = _problem
     }
-    if (isOfficial) setOfficialScores(submissions[0].submittedBy, problem.id, score, finalVerdict, problem.contestId)
-    else
-        setUnofficialScores(submissions[0].submittedBy, problem.id, score, finalVerdict, problem.contestId)
-}
+    async judgeSubmissions() {
 
-async function setOfficialScores(submittedBy, problemId, score, verdict, contestId) {
-    executeSqlAsync({
-        sql: `update submissionResult set finalVerdictOfficial=?, official_points=?
+        let promises = []
+
+        this.submissions.forEach((submission) => {
+            const judgeRepository = new JudgeRepository({
+                submissionId: submission.id
+            })
+            promises.push((async () => {
+                try {
+                    let data = null
+                    if (submission.language == 'python') {
+                        data = await runPython(submission.problemId, submission.submissionFileURL)
+                    }
+                    else if (submission.language == 'c++') {
+                        data = await executeCPP(submission.problemId, submission.submissionFileURL)
+                    }
+                    submission.verdict = data.verdict
+                    submission.execTime = data.execTime
+                    judgeRepository.verdictType = data.type
+                    judgeRepository.execTime = data.execTime
+                    judgeRepository.verdict = data.verdict
+                    judgeRepository.setVerdict()
+                } catch (error) {
+                    judgeRepository.verdictType = error.type
+                    judgeRepository.execTime = error.execTime
+                    judgeRepository.verdict = error.verdict
+                    judgeRepository.setVerdict()
+                    submission.verdict = error.verdict
+                    submission.execTime = error.execTime
+                }
+
+            })())
+
+        })
+
+        await Promise.all(promises)
+        this.setScores()
+        this.setScores(false)
+
+    }
+    async setScores(isOfficial = true) {
+        const { submissions, problem } = this
+
+        let oldestAcSubmission = null
+        let latestRejection = null
+        let rejectCounter = 0
+        if (!submissions.length)
+            return
+        submissions.forEach(submission => {
+            if (submission.verdict == 'AC') {
+                if (!oldestAcSubmission) {
+                    oldestAcSubmission = submission;
+                    return
+                }
+                if (oldestAcSubmission.time > submission.time) oldestAcSubmission = submission
+            }
+            else {
+                rejectCounter += 1
+                if (!latestRejection) {
+                    latestRejection = submission
+                    return
+                }
+                if (latestRejection.time < submission.time) latestRejection = submission
+            }
+        })
+        let score = -rejectCounter * 5
+
+        let finalVerdict = ''
+        if (latestRejection) finalVerdict = latestRejection.verdict
+        if (oldestAcSubmission) {
+            let [contest] = await executeSqlAsync({
+                sql: `select * from contest where id=?;`,
+                values: [this.problem.contestId]
+            })
+            let timeDiff = Math.max(parseInt((oldestAcSubmission.time - contest.startTime) / (3600 * 1000 * 10)), 0)
+            let obtained = Math.max(problem.points - timeDiff * 5, 10)
+
+            score += obtained
+            finalVerdict = 'AC'
+        }
+        this.score = score
+        this.finalVerdict = finalVerdict
+        if (isOfficial) this.setOfficialScores(this.submissions.filter(submission => submission.isOfficial))
+        else
+            this.setUnofficialScores(this.submissions.filter(submission => !submission.isOfficial))
+    }
+    /**
+     * 
+     * @param {[any]} submissions 
+     */
+    async setOfficialScores(submissions) {
+        let verdictNumber = this.finalVerdict == 'AC' ? 1 : 0
+        if (!submissions.length) return
+        const { submittedBy } = submissions[0]
+        const problemId = this.problem.id
+        const { score, finalVerdict } = this;
+        const { contestId } = this.problem
+        executeSqlAsync({
+            sql: `update submissionResult set finalVerdictOfficial=?, official_points=?
                 where problemId=? and contestantId=? ;`,
-        values: [verdict, score, problemId, submittedBy]
-    })
-    let [contestResult] = await executeSqlAsync({
-        sql: `select * from contestResult where contestId=? and contestantId=?;`,
-        values: [contestId, submittedBy]
-    })
-    let { official_description, officialVerdicts } = contestResult
-    officialVerdicts = JSON.parse(officialVerdicts)
-    officialVerdicts[problemId] = verdict
-    official_description = JSON.parse(official_description)
-    official_description[problemId] = score
-    executeSqlAsync({
-        sql: `update contestResult set official_points=?,official_description=?, officialVerdicts=?
+            values: [verdictNumber, score, problemId, submittedBy]
+        })
+        let [contestResult] = await executeSqlAsync({
+            sql: `select * from contestResult where contestId=? and contestantId=?;`,
+            values: [contestId, submittedBy]
+        })
+        let { official_description, officialVerdicts } = contestResult
+        officialVerdicts = JSON.parse(officialVerdicts)
+        officialVerdicts[problemId] = finalVerdict
+        official_description = JSON.parse(official_description)
+        official_description[problemId] = score
+        executeSqlAsync({
+            sql: `update contestResult set official_points=?,official_description=?, officialVerdicts=?
                   where contestId=? and contestantId=?;`,
-        values: [score, JSON.stringify(official_description),
-            JSON.stringify(officialVerdicts), contestId, submittedBy]
-    })
-}
+            values: [score, JSON.stringify(official_description),
+                JSON.stringify(officialVerdicts), contestId, submittedBy]
+        })
+    }
+    /**
+     * 
+     * @param {[any]} submissions 
+     */
+    async setUnofficialScores(submissions) {
+        let verdictNumber = this.finalVerdict == 'AC' ? 1 : 0
+        if (!submissions.length) return
 
-
-async function setUnofficialScores(submittedBy, problemId, score, verdict, contestId) {
-    let verdictNumber = verdict == 'AC' ? 1 : 0
-    executeSqlAsync({
-        sql: `update submissionResult set finalVerdict =?, points=?
+        const { submittedBy } = submissions[0]
+        const problemId = this.problem.id
+        const { score, finalVerdict } = this;
+        const { contestId } = this.problem;
+        executeSqlAsync({
+            sql: `update submissionResult set finalVerdict =?, points=?
                 where problemId=? and contestantId=? ;`,
-        values: [verdictNumber, score, problemId, submittedBy]
-    })
-    let [contestResult] = await executeSqlAsync({
-        sql: `select * from contestResult where contestId=? and contestantId=?;`,
-        values: [contestId, submittedBy]
-    })
-    let { description, verdicts } = contestResult
-    verdicts = JSON.parse(verdict)
-    description = JSON.parse(description)
-    verdicts[problemId] = verdict
-    description[problemId] = score
-    executeSqlAsync({
-        sql: `update contestResult set points=?,description=?,verdicts=?
+            values: [verdictNumber, score, problemId, submittedBy]
+        })
+        let [contestResult] = await executeSqlAsync({
+            sql: `select * from contestResult where contestId=? and contestantId=?;`,
+            values: [contestId, submittedBy]
+        })
+        let { description, verdicts } = contestResult
+        verdicts = JSON.parse(verdicts)
+        description = JSON.parse(description)
+        verdicts[problemId] = finalVerdict
+        description[problemId] = score
+        executeSqlAsync({
+            sql: `update contestResult set points=?,description=?,verdicts=?
                   where contestId=? and contestantId=?;`,
-        values: [score, JSON.stringify(description), JSON.stringify(description), contestId, submittedBy]
-    })
+            values: [score, JSON.stringify(description), JSON.stringify(description), contestId, submittedBy]
+        })
+    }
 }
+
+
+
+
+
+

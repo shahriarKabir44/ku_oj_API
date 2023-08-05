@@ -5,11 +5,9 @@ async function executeCPP(problemId, filePath) {
     return new Promise((resolve, reject) => {
         exec(`g++ ${__dirname + filePath} -o ${__dirname + filePath.replace('.cpp', '')}`, (error, stdout, stderr) => {
             if (error) {
-                console.log(`error: ${error.message}`);
                 return;
             }
             if (stderr) {
-                console.log(`stderr: ${stderr}`);
                 return;
             }
             const child = spawn(__dirname + filePath.replace('.cpp', ''));
@@ -18,7 +16,6 @@ async function executeCPP(problemId, filePath) {
                     resolve(data)
                 })
                 .catch(err => {
-                    console.log(err, "fsf")
                     reject(err)
                 })
 
