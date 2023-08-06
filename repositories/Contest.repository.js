@@ -108,20 +108,8 @@ module.exports = class ContestRepository {
         })
         return contest
     }
-    static async registerForContest({ userId, contestId }) {
 
-        return executeSqlAsync({
-            sql: QueryBuilder.insertQuery('registration', ['userId', 'contestId']),
-            values: [userId, contestId]
-        })
-    }
-    static async isRegistered({ userId, contestId }) {
-        let [registration] = await executeSqlAsync({
-            sql: `select * from registration where userId=? and contestId=?;`,
-            values: [userId, contestId]
-        })
-        return registration != null
-    }
+
 
     static async getContestStandings({ contestId, pageNumber, isOfficial }) {
         return executeSqlAsync({

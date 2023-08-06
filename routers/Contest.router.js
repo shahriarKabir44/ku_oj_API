@@ -67,19 +67,9 @@ ContestRouter.get('/searchContestByProblem/:problemId', (req, res) => {
             res.send(contest)
         })
 })
-ContestRouter.post('/registerForContest', (req, res) => {
-    ContestRepository.registerForContest(req.body)
-        .then(() => {
-            res.send({ success: true })
-        })
-})
 
-ContestRouter.post('/isRegistered', (req, res) => {
-    ContestRepository.isRegistered(req.body)
-        .then(isRegistered => {
-            res.send({ isRegistered })
-        })
-})
+
+
 
 ContestRouter.post('/getContestStandings', (req, res) => {
     ContestRepository.getContestStandings(req.body)
