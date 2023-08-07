@@ -153,5 +153,12 @@ module.exports = class ContestRepository {
             values: [title, code, points, id]
         })
     }
-
+    static async hasSolvedProblem({ userId, problemId }) {
+        let [{ finalVerdict, finalVerdictOfficial }] = await executeSqlAsync({
+            sql: `select  finalVerdict, finalVerdictOfficial from submissionResult
+                where contestantId=? and problemId=?;`,
+            values: [userId, problemId]
+        })
+        return { finalVerdict, finalVerdictOfficial }
+    }
 }

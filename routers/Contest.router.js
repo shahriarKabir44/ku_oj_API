@@ -69,7 +69,12 @@ ContestRouter.get('/searchContestByProblem/:problemId', (req, res) => {
 })
 
 
-
+ContestRouter.get('/hasSolvedProblem/:userId/:problemId', (req, res) => {
+    ContestRepository.hasSolvedProblem(req.params)
+        .then(verdicts => {
+            res.send(verdicts)
+        })
+})
 
 ContestRouter.post('/getContestStandings', (req, res) => {
     ContestRepository.getContestStandings(req.body)
