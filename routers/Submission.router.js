@@ -26,6 +26,7 @@ SubmissionRouter.post('/submit', [(req, res, next) => {
         .then(resp => {
             res.send(resp)
         })
+    judgeRepository = null
 })
 
 SubmissionRouter.post('/getPreviousSubmissionsOfProblem', (req, res) => {

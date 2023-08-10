@@ -34,6 +34,7 @@ module.exports = class JudgeRepository {
         this.path = `${this.submissionFileURL}`;
         this.execTime = execTime
         this.isNewSubmission = true
+        console.log(problemId)
     }
     async judgeSubmission() {
         await this.calculateErrorsAndACs()
@@ -50,7 +51,6 @@ module.exports = class JudgeRepository {
             this.verdict = data.verdict
             this.setVerdict()
                 .then(() => {
-                    console.log(this, "here")
                     this.setScoreWhenAccepted()
                 })
 
@@ -71,7 +71,7 @@ module.exports = class JudgeRepository {
     async calculateErrorsAndACs() {
 
         let [submissionResult] = await executeSqlAsync({
-            sql: `select * from submissionResult where contestantId=? and problemId;`,
+            sql: `select * from submissionResult where contestantId=? and problemId=?;`,
             values: [this.userId, this.problemId]
         })
         if (!submissionResult) {
@@ -109,25 +109,23 @@ module.exports = class JudgeRepository {
     }
 
     async calculateScore() {
+        this.updateACandErrorCount()
 
         this.score = - 5 * (this.isOfficial ? this.errorCount_official : this.errorCount_unofficial)
         if (this.verdict == 'AC') {
-            let [contest] = await executeSqlAsync({
-                sql: `select * from contest where id=?;`,
+            let [{ startTime }] = await executeSqlAsync({
+                sql: `select startTime from contest where id=?;`,
                 values: [this.contestId]
             })
 
-            let timeDiff = Math.max(parseInt((this.time - contest.startTime) / (3600 * 1000 * 10)), 0)
+            let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
 
-            let [problem] = await executeSqlAsync({
-                sql: `select * from problem where id=?;`,
-                values: [this.problemId]
-            })
-            this.score += Math.max(problem.points - timeDiff * 10, 10)
+
+            this.score += Math.max(this.points - timeDiff * 10, 10)
         }
     }
     async setScoreWhenAccepted() {
-        if ((this.isOfficial && this.acCount_official == 0) || (!this.isOfficial && this.acCount_unofficial == 0)) {
+        if ((this.isOfficial && this.acCount_official == 1) || (!this.isOfficial && this.acCount_unofficial == 1)) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [this.problemId]
@@ -172,24 +170,24 @@ module.exports = class JudgeRepository {
                 let { official_description, officialVerdicts } = contestResult
                 official_description = JSON.parse(official_description)
                 officialVerdicts = JSON.parse(officialVerdicts)
-                official_description[this.problemId] = this.points
+                official_description[this.problemId] = this.score
                 officialVerdicts[this.problemId] = this.verdict
 
                 await executeSqlAsync({
                     sql: `update contestResult set official_points=official_points+?, official_description=?, officialVerdicts=? where contestId=? and contestantId=?;`,
-                    values: [this.points, JSON.stringify(official_description), JSON.stringify(officialVerdicts), this.contestId, this.userId]
+                    values: [this.score, JSON.stringify(official_description), JSON.stringify(officialVerdicts), this.contestId, this.userId]
                 })
                 return
             }
             let { description, verdicts } = contestResult
             description = JSON.parse(description)
             verdicts = JSON.parse(verdicts)
-            description[this.problemId] = this.points
+            description[this.problemId] = this.score
             verdicts[this.problemId] = this.verdict
 
             await executeSqlAsync({
                 sql: `update contestResult set points=points+?, description=?, verdicts=? where contestId=? and contestantId=?;`,
-                values: [this.points, JSON.stringify(description), JSON.stringify(verdicts), this.contestId, this.userId]
+                values: [this.score, JSON.stringify(description), JSON.stringify(verdicts), this.contestId, this.userId]
             })
         }
 
@@ -216,7 +214,6 @@ module.exports = class JudgeRepository {
     }
     async updateSubmissionResult() {
         let finalVerdict = this.verdict == 'AC' ? 1 : 0
-        this.updateACandErrorCount()
 
 
         if (this.isOfficial) {
