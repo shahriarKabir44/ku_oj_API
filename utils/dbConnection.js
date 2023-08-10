@@ -4,10 +4,10 @@ let connection = {};
 
 function initConnection(env) {
     connection.connection = mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
+        host: env.dbHost,
+        user: env.dbUser,
         password: env.dbPassword,
-        database: 'ku_oj',
+        database: env.dbName,
         port: 3306
     })
 }
