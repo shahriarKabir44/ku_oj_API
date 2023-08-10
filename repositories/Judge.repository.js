@@ -46,7 +46,10 @@ module.exports = class JudgeRepository {
             this.verdictType = data.type
             this.execTime = data.execTime
             this.verdict = data.verdict
-            this.setVerdict()
+            await Promise.all([
+                this.setVerdict(),
+                this.calculateErrors()
+            ])
             this.setScoreWhenAccepted()
 
             return { ...data, id: this.submissionId }
@@ -54,13 +57,24 @@ module.exports = class JudgeRepository {
             this.verdictType = error.type
             this.execTime = 'N/A'
             this.verdict = error.verdict
+            await this.calculateErrors()
+            this.errorCount++;
             this.setVerdict()
 
             this.setScoreWhenRejected()
             return { ...error, id: this.submissionId }
         }
     }
+    async calculateErrorsAndACs() {
+        let [submissionResult] = await executeSqlAsync({
+            sql: `select * from submissionResult where ;`,
+            values: [this.userId, this.problemId, this.isOfficial]
+        })
+        if (!submissionResult) {
+            this.errorCount = 0
 
+        }
+    }
     async setVerdict() {
         executeSqlAsync({
             sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
@@ -87,15 +101,16 @@ module.exports = class JudgeRepository {
 
         let timeDiff = Math.max(parseInt((this.time - contest.startTime) / (3600 * 1000 * 10)), 0)
 
-        return Math.max(problem.points - timeDiff * 5, 10)
+        return Math.max(problem.points - timeDiff * 5, 10) - 5 * this.errorCount
     }
     async setScoreWhenAccepted() {
-        const [{ acCounter }] = await executeSqlAsync({
-            sql: `select count(id) as acCounter from submission where verdict='AC' and
+        const [{ totalSubmissions }] = await executeSqlAsync({
+            sql: `select count(id) as totalSubmissions from submission where 
                     problemId=? and submittedBy=?;`,
             values: [this.problemId, this.userId]
 
         })
+        acCounter = totalSubmissions - this.errorCount
         if (acCounter == 1) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
@@ -141,7 +156,7 @@ module.exports = class JudgeRepository {
         else {
             if (this.isOfficial) {
                 let { official_description, officialVerdicts } = contestResult
-                official_description = JSON.parse(description)
+                official_description = JSON.parse(official_description)
                 officialVerdicts = JSON.parse(officialVerdicts)
                 official_description[this.problemId] = this.points
                 officialVerdicts[this.problemId] = this.verdict
