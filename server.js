@@ -45,5 +45,8 @@ function startExpress() {
     app.use('/contests', require('./routers/Contest.router'))
     app.use('/submission', require('./routers/Submission.router'))
     app.use('/user', require('./routers/User.router'))
+    app.get('/test', (req, res) => {
+        res.send({ message: "hello world!" })
+    })
 }
 
