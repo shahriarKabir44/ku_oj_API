@@ -49,7 +49,10 @@ module.exports = class JudgeRepository {
             this.execTime = data.execTime
             this.verdict = data.verdict
             this.setVerdict()
-            this.setScoreWhenAccepted()
+                .then(() => {
+                    console.log(this, "here")
+                    this.setScoreWhenAccepted()
+                })
 
             return { ...data, id: this.submissionId }
         } catch (error) {
@@ -57,8 +60,9 @@ module.exports = class JudgeRepository {
             this.execTime = 'N/A'
             this.verdict = error.verdict
             this.setVerdict()
-
-            this.setScoreWhenRejected()
+                .then(() => {
+                    this.setScoreWhenRejected()
+                })
             return { ...error, id: this.submissionId }
         }
     }
@@ -67,8 +71,8 @@ module.exports = class JudgeRepository {
     async calculateErrorsAndACs() {
 
         let [submissionResult] = await executeSqlAsync({
-            sql: `select * from submissionResult where ;`,
-            values: [this.userId, this.problemId, this.isOfficial]
+            sql: `select * from submissionResult where contestantId=? and problemId;`,
+            values: [this.userId, this.problemId]
         })
         if (!submissionResult) {
             this.errorCount_official = 0
@@ -86,11 +90,16 @@ module.exports = class JudgeRepository {
         }
     }
     async setVerdict() {
-        executeSqlAsync({
-            sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
+        return Promise.all([
+            this.calculateScore(),
+            executeSqlAsync({
+                sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
                  where id=?;`,
-            values: [this.verdict, this.execTime, this.submissionId]
-        })
+                values: [this.verdict, this.execTime, this.submissionId]
+            })
+        ])
+
+
 
     }
 
@@ -100,29 +109,30 @@ module.exports = class JudgeRepository {
     }
 
     async calculateScore() {
-        let [problem] = await executeSqlAsync({
-            sql: `select * from problem where id=?;`,
-            values: [this.problemId]
-        })
-        let [contest] = await executeSqlAsync({
-            sql: `select * from contest where id=?;`,
-            values: [this.contestId]
-        })
 
-        let timeDiff = Math.max(parseInt((this.time - contest.startTime) / (3600 * 1000 * 10)), 0)
+        this.score = - 5 * (this.isOfficial ? this.errorCount_official : this.errorCount_unofficial)
+        if (this.verdict == 'AC') {
+            let [contest] = await executeSqlAsync({
+                sql: `select * from contest where id=?;`,
+                values: [this.contestId]
+            })
 
-        return Math.max(problem.points - timeDiff * 5, 10) - 5 * this.errorCount
+            let timeDiff = Math.max(parseInt((this.time - contest.startTime) / (3600 * 1000 * 10)), 0)
+
+            let [problem] = await executeSqlAsync({
+                sql: `select * from problem where id=?;`,
+                values: [this.problemId]
+            })
+            this.score += Math.max(problem.points - timeDiff * 10, 10)
+        }
     }
     async setScoreWhenAccepted() {
-
         if ((this.isOfficial && this.acCount_official == 0) || (!this.isOfficial && this.acCount_unofficial == 0)) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [this.problemId]
             })
 
-            const score = await this.calculateScore()
-            this.score = score
             this.updateSubmissionResult()
             this.updateContestResult()
         }
@@ -207,7 +217,6 @@ module.exports = class JudgeRepository {
     async updateSubmissionResult() {
         let finalVerdict = this.verdict == 'AC' ? 1 : 0
         this.updateACandErrorCount()
-
 
 
         if (this.isOfficial) {

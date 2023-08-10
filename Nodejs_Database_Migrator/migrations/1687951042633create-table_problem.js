@@ -8,7 +8,7 @@ newTable.addColumn('testcaseFileURL', 'text')
 newTable.addColumn('outputFileURL', 'text')
 newTable.addColumn('contestId', 'int')
 newTable.addColumn('points', 'int')
-newTable.addColumn('numSolutions', 'int')
+newTable.addColumn('numSolutions', 'int').setDefaultValue("0")
 newTable.addColumn('code', 'varchar(255)')
 
 newTable.addForeignKey('contestId', 'contest', 'id')
