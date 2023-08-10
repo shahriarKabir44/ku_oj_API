@@ -33,8 +33,10 @@ module.exports = class JudgeRepository {
         this.verdictType = verdictType
         this.path = `${this.submissionFileURL}`;
         this.execTime = execTime
+        this.isNewSubmission = true
     }
     async judgeSubmission() {
+        await this.calculateErrorsAndACs()
         try {
             let data = null
             if (this.ext == 'py') {
@@ -46,10 +48,7 @@ module.exports = class JudgeRepository {
             this.verdictType = data.type
             this.execTime = data.execTime
             this.verdict = data.verdict
-            await Promise.all([
-                this.setVerdict(),
-                this.calculateErrors()
-            ])
+            this.setVerdict()
             this.setScoreWhenAccepted()
 
             return { ...data, id: this.submissionId }
@@ -57,22 +56,33 @@ module.exports = class JudgeRepository {
             this.verdictType = error.type
             this.execTime = 'N/A'
             this.verdict = error.verdict
-            await this.calculateErrors()
-            this.errorCount++;
             this.setVerdict()
 
             this.setScoreWhenRejected()
             return { ...error, id: this.submissionId }
         }
     }
+
+
     async calculateErrorsAndACs() {
+
         let [submissionResult] = await executeSqlAsync({
             sql: `select * from submissionResult where ;`,
             values: [this.userId, this.problemId, this.isOfficial]
         })
         if (!submissionResult) {
-            this.errorCount = 0
-
+            this.errorCount_official = 0
+            this.acCount_unofficial = 0
+            this.errorCount_unofficial = 0
+            this.acCount_official = 0
+        }
+        else {
+            this.isNewSubmission = false
+            let { errorCount_official, acCount_unofficial, errorCount_unofficial, acCount_official } = submissionResult
+            this.errorCount_official = errorCount_official
+            this.acCount_unofficial = acCount_unofficial
+            this.errorCount_unofficial = errorCount_unofficial
+            this.acCount_official = acCount_official
         }
     }
     async setVerdict() {
@@ -104,14 +114,8 @@ module.exports = class JudgeRepository {
         return Math.max(problem.points - timeDiff * 5, 10) - 5 * this.errorCount
     }
     async setScoreWhenAccepted() {
-        const [{ totalSubmissions }] = await executeSqlAsync({
-            sql: `select count(id) as totalSubmissions from submission where 
-                    problemId=? and submittedBy=?;`,
-            values: [this.problemId, this.userId]
 
-        })
-        acCounter = totalSubmissions - this.errorCount
-        if (acCounter == 1) {
+        if ((this.isOfficial && this.acCount_official == 0) || (!this.isOfficial && this.acCount_unofficial == 0)) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [this.problemId]
@@ -180,36 +184,82 @@ module.exports = class JudgeRepository {
         }
 
     }
+    updateACandErrorCount() {
+        if (this.isOfficial) {
+            if (this.verdict != 'AC') {
+                this.errorCount_official++;
 
+            }
+            else {
+                this.acCount_official++
+            }
+        }
+        else {
+            if (this.verdict != 'AC') {
+                this.errorCount_unofficial++;
+
+            }
+            else {
+                this.acCount_unofficial++
+            }
+        }
+    }
     async updateSubmissionResult() {
-        let finalVerdict = this.score > 0 ? 1 : 0
+        let finalVerdict = this.verdict == 'AC' ? 1 : 0
+        this.updateACandErrorCount()
+
+
 
         if (this.isOfficial) {
-            executeSqlAsync({
-                sql: `INSERT into submissionResult(
-                                contestantId,
-                                problemId,
-                                official_points,
-                                finalVerdictOfficial
-                            )
-                        values(?, ?, ?,?) 
-                        on DUPLICATE key UPDATE official_points = official_points+?, finalVerdict=(select case when finalVerdictOfficial>? then finalVerdictOfficial else ? end )  ;`,
-                values: [this.userId, this.problemId, this.score, finalVerdict, this.score, finalVerdict, finalVerdict]
-            })
+            if (this.isNewSubmission) {
+                executeSqlAsync({
+                    sql: QueryBuilder.insertQuery('submissionResult', ['contestantId',
+                        'problemId',
+                        'official_points',
+                        'finalVerdictOfficial',
+                        'acCount_official',
+                        'errorCount_official']),
+                    values: [this.userId, this.problemId, this.score, finalVerdict,
+                    this.acCount_official, this.errorCount_official]
+                })
+            }
+            else {
+                const { acCount_official, errorCount_official, score, userId, problemId } = this
+                executeSqlAsync({
+                    sql: `${QueryBuilder.createUpdateQuery('submissionResult', [
+                        'official_points',
+                        'finalVerdictOfficial',
+                        'acCount_official',
+                        'errorCount_official'])} where contestantId=? and problemId=?`,
+                    values: [score, finalVerdict, acCount_official, errorCount_official, userId, problemId]
+                })
+            }
             return
         }
 
-        executeSqlAsync({
-            sql: `INSERT into submissionResult(
-                                contestantId,
-                                problemId,
-                                points,
-                                finalVerdict
-                            )
-                        values(?, ?, ?,?) 
-                        on DUPLICATE key UPDATE points = points+?, finalVerdict=(select case when finalVerdict>? then finalVerdict else ? end )  ;`,
-            values: [this.userId, this.problemId, this.score, finalVerdict, this.score, finalVerdict, finalVerdict]
-        })
+        if (this.isNewSubmission) {
+            executeSqlAsync({
+                sql: QueryBuilder.insertQuery('submissionResult', ['contestantId',
+                    'problemId',
+                    'points',
+                    'finalVerdict',
+                    'acCount_unofficial',
+                    'errorCount_unofficial']),
+                values: [this.userId, this.problemId, this.score, finalVerdict,
+                this.acCount_unofficial, this.errorCount_unofficial]
+            })
+        }
+        else {
+            const { acCount_unofficial, errorCount_unofficial, score, userId, problemId } = this
+            executeSqlAsync({
+                sql: `${QueryBuilder.createUpdateQuery('submissionResult', [
+                    'points',
+                    'finalVerdict',
+                    'acCount_unofficial',
+                    'errorCount_unofficial'])} where contestantId=? and problemId=?`,
+                values: [score, finalVerdict, acCount_unofficial, errorCount_unofficial, userId, problemId]
+            })
+        }
 
     }
 
