@@ -1,7 +1,8 @@
 const express = require('express')
 const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
-const { initConnection } = require('./utils/dbConnection')
+const { initConnection } = require('./utils/dbConnection');
+const { RedisClient } = require('./utils/redisConnection');
 const workers = []
 const clients = new Map()
 require('dotenv').config({ path: `${__dirname}/.env.dev` })
@@ -33,7 +34,7 @@ function startExpress() {
     const app = express()
 
     initConnection(process.env)
-
+    RedisClient.initClient()
     app.listen(8080)
     app.use(require('cors')({
         origin: '*'
