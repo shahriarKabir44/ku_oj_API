@@ -2,7 +2,7 @@ const express = require('express')
 const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
 const { initConnection } = require('./utils/dbConnection');
-const { RedisClient } = require('./utils/redisConnection');
+const { RedisClient } = require('./utils/RedisClient');
 const workers = []
 const clients = new Map()
 require('dotenv').config({ path: `${__dirname}/.env.dev` })

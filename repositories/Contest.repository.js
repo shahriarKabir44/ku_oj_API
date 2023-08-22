@@ -1,9 +1,23 @@
+const { RedisClient } = require('../utils/RedisClient')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 
 const QueryBuilder = require('../utils/queryBuilder')
 
 
 module.exports = class ContestRepository {
+    static async findContestById(id) {
+        try {
+            let contest = RedisClient.queryCache(`contest_${id}`)
+            return contest
+        } catch (error) {
+            let [contest] = await executeSqlAsync({
+                sql: `select * from contest where id=?;`,
+                values: [id]
+            })
+            RedisClient.store(`contest_${id}`, contest)
+            return contest
+        }
+    }
     static async getContests() {
         return executeSqlAsync({
             sql: `SELECT id,startTime,endTime,title,hostId, 
@@ -24,16 +38,23 @@ module.exports = class ContestRepository {
     }
 
     static async getProblemInfo({ id }) {
-        let [problemInfo] = await executeSqlAsync({
-            sql: `select id,statementFileURL,
-                 contestId, title,points, testcaseFileURL, code,
-                 outputFileURL, numSolutions, (select title from contest
-                    where contest.id=problem.contestId) as contestName 
-                    , (select code from contest
-                    where contest.id=problem.contestId) as contestCode from problem where id=?`,
-            values: [id]
-        })
-        return problemInfo
+
+        let problem = null
+        try {
+            problem = await RedisClient.queryCache(`problem_${id}`)
+        } catch (error) {
+            let [problemInfo] = await executeSqlAsync({
+                sql: `select * from problem where id=?`,
+                values: [id]
+            })
+            problem = problemInfo
+            RedisClient.store(problem)
+        }
+        let contest = this.findContestById()
+        problem.contestName = contest.title
+        problem.contestCode = contest.code
+
+        return problem
     }
     static async getContestProblems({ id }) {
         return executeSqlAsync({
@@ -82,30 +103,31 @@ module.exports = class ContestRepository {
         })
     }
     static async getContestInfo({ id }) {
-        let [contest] = await executeSqlAsync({
-            sql: `SELECT
-                    id,
-                    startTime,
-                    endTime,
-                    title,
-                    code,
-                    hostId, (
-                        select userName
-                        from user
-                        WHERE
-                            user.id = hostId
-                    ) as hostName
+        let contest = null;
+        try {
+            contest = await RedisClient.queryCache(`contest_${id}`)
+        } catch (error) {
+            let [contestInfo] = await executeSqlAsync({
+                sql: `SELECT *
                 from contest WHERE id=?;`,
-            values: [id]
-        })
+                values: [id]
+            })
+            contest = contestInfo
+            RedisClient.store(`contest_${id}`, contest)
+        }
+
+
+
         return contest
     }
     static async searchContestByProblem({ problemId }) {
+
         const [contest] = await executeSqlAsync({
             sql: `select * from contest 
                 where contest.id=(select contestId from problem where problem.id=?);`,
             values: [problemId]
         })
+        RedisClient.store(`contest_${contest.id}`, contest)
         return contest
     }
 
@@ -139,19 +161,29 @@ module.exports = class ContestRepository {
     }
 
 
-    static updateContestInfo({ id, title, startTime, endTime, code }) {
-        return executeSqlAsync({
+    static async updateContestInfo({ id, title, startTime, endTime, code }) {
+        await executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('contest',
                 ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
             values: [title, startTime, endTime, code, id]
         })
+        let [contest] = await executeSqlAsync({
+            sql: `select * from contest where id=?;`,
+            values: [id]
+        })
+        RedisClient.store(`contest_${id}`, contest)
     }
     static async updateProblemInfo({ id, title, code, points }) {
-        return executeSqlAsync({
+        await executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('problem',
                 ['title', 'code', 'points']) + ` where id=?;`,
             values: [title, code, points, id]
         })
+        let [problem] = await executeSqlAsync({
+            sql: `select * from problem where id=?;`,
+            values: [id]
+        })
+        RedisClient.store(`problem_${id}`, problem)
     }
     static async hasSolvedProblem({ userId, problemId }) {
         try {

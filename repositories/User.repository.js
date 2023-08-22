@@ -1,3 +1,4 @@
+const { RedisClient } = require('../utils/RedisClient')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 const QueryBuilder = require('../utils/queryBuilder')
 const jwt = require('jsonwebtoken')
@@ -21,7 +22,16 @@ module.exports = class UserRepository {
             return null
         }
     }
-
+    static async findById({ id }) {
+        let user = null
+        try {
+            user = await RedisClient.queryCache(`user_${id}`)
+        } catch (error) {
+            let [userInfo] = await executeSqlAsync({ sql: `select user from userName,id where id=?`, values: [id] })
+            user = userInfo
+            RedisClient.store(`user_${id}`)
+        }
+    }
     static async authenticate({ userName, password }) {
         let [user] = await executeSqlAsync({
             sql: `select * from user where userName=? and password=?;`,
