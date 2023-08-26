@@ -11,6 +11,8 @@ require('dotenv').config()
 initConnection(process.env)
 const JudgeRepository = require("../Judge.repository");
 const { executeCPP } = require("../../executors/executeCPP");
+const ContestRepository = require("../Contest.repository");
+const { RedisClient } = require("../../utils/RedisClient");
 
 
 parentPort.on('message', ({ submissions, problem }) => {
@@ -94,10 +96,8 @@ class UserSubmissionReEvaluator {
         let finalVerdict = ''
         if (latestRejection) finalVerdict = latestRejection.verdict
         if (oldestAcSubmission) {
-            let [contest] = await executeSqlAsync({
-                sql: `select * from contest where id=?;`,
-                values: [this.problem.contestId]
-            })
+
+            let contest = await ContestRepository.findContestById(this.problem.contestId)
             let timeDiff = Math.max(parseInt((oldestAcSubmission.time - contest.startTime) / (3600 * 1000 * 10)), 0)
             let obtained = Math.max(problem.points - timeDiff * 5, 10)
 
@@ -125,11 +125,20 @@ class UserSubmissionReEvaluator {
             sql: `update submissionResult set finalVerdictOfficial=?, official_points=?
                 where problemId=? and contestantId=? ;`,
             values: [verdictNumber, score, problemId, submittedBy]
+        }).then(() => {
+            JudgeRepository.getSubmissionResult({ problemId, userId: submittedBy })
+                .then(_submissionResult => {
+                    _submissionResult = {
+                        ..._submissionResult, finalVerdictOfficial: verdictNumber,
+                        official_points: score
+                    }
+                    RedisClient.store(`submissionResult_${problemId}_${submittedBy}`, _submissionResult)
+
+                })
+
+
         })
-        let [contestResult] = await executeSqlAsync({
-            sql: `select * from contestResult where contestId=? and contestantId=?;`,
-            values: [contestId, submittedBy]
-        })
+        letcontestResult = await JudgeRepository.getContestResult({ contestId, userId: submittedBy })
         let { official_description, officialVerdicts } = contestResult
         officialVerdicts = JSON.parse(officialVerdicts)
         officialVerdicts[problemId] = finalVerdict
@@ -140,6 +149,17 @@ class UserSubmissionReEvaluator {
                   where contestId=? and contestantId=?;`,
             values: [score, JSON.stringify(official_description),
                 JSON.stringify(officialVerdicts), contestId, submittedBy]
+        }).then(() => {
+            JudgeRepository.getContestResult({ contestId, userId: submittedBy })
+                .then(_contestResult => {
+                    _contestResult = {
+                        ..._contestResult, official_points: score,
+                        official_description: JSON.stringify(official_description),
+                        officialVerdicts: JSON.stringify(officialVerdicts)
+                    }
+                    RedisClient.store(`contestResult_${contestId}_${submittedBy}`, _contestResult)
+                })
+
         })
     }
     /**

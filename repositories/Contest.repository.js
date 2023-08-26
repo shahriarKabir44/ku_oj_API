@@ -2,6 +2,7 @@ const { RedisClient } = require('../utils/RedisClient')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 
 const QueryBuilder = require('../utils/queryBuilder')
+const JudgeRepository = require('./Judge.repository')
 
 
 module.exports = class ContestRepository {
@@ -36,9 +37,7 @@ module.exports = class ContestRepository {
             values: [time]
         })
     }
-
-    static async getProblemInfo({ id }) {
-
+    static async findProblemById(id) {
         let problem = null
         try {
             problem = await RedisClient.queryCache(`problem_${id}`)
@@ -50,6 +49,11 @@ module.exports = class ContestRepository {
             problem = problemInfo
             RedisClient.store(problem)
         }
+        return problem
+    }
+    static async getProblemInfo({ id }) {
+
+        let problem = await this.findProblemById(id)
         let contest = this.findContestById(problem.contestId)
         problem.contestName = contest.title
         problem.contestCode = contest.code
@@ -105,7 +109,7 @@ module.exports = class ContestRepository {
 
     static async searchContestByProblem({ problemId }) {
 
-        const problem = await this.getProblemInfo({ id: problemId })
+        const problem = await this.findProblemById({ id: problemId })
 
         return await this.findContestById(problem.contestId)
     }
@@ -123,12 +127,10 @@ module.exports = class ContestRepository {
     static async getFullContestDetails({ contestId }) {
         let data = {}
         await Promise.all([
-            executeSqlAsync({
-                sql: `select * from contest where id=?;`,
-                values: [contestId]
-            }).then(([contestInfo]) => {
-                data = { ...data, ...contestInfo }
-            }),
+            this.findContestById(contestId)
+                .then(([contestInfo]) => {
+                    data = { ...data, ...contestInfo }
+                }),
             executeSqlAsync({
                 sql: `select * from problem where contestId=?`,
                 values: [contestId]
@@ -146,11 +148,11 @@ module.exports = class ContestRepository {
                 ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
             values: [title, startTime, endTime, code, id]
         })
-        let [contest] = await executeSqlAsync({
-            sql: `select * from contest where id=?;`,
-            values: [id]
-        })
-        RedisClient.store(`contest_${id}`, contest)
+
+        RedisClient.remove(`contest_${id}`)
+            .then(() => {
+                this.findContestById(id)
+            })
     }
     static async updateProblemInfo({ id, title, code, points }) {
         await executeSqlAsync({
@@ -158,28 +160,17 @@ module.exports = class ContestRepository {
                 ['title', 'code', 'points']) + ` where id=?;`,
             values: [title, code, points, id]
         })
-        let [problem] = await executeSqlAsync({
-            sql: `select * from problem where id=?;`,
-            values: [id]
-        })
-        RedisClient.store(`problem_${id}`, problem)
+
+        RedisClient.remove(`problem_${id}`)
+            .then(() => {
+                this.findProblemById(id)
+            })
     }
     static async hasSolvedProblem({ userId, problemId }) {
-        let submissionResult = {}
-        try {
-            submissionResult = await RedisClient.queryCache(`submissionResult_${problemId}_${userId}`)
-        } catch (error) {
-            let [submissionInfo] = await executeSqlAsync({
-                sql: `select  finalVerdict, finalVerdictOfficial from submissionResult
-                where contestantId=? and problemId=?;`,
-                values: [userId, problemId]
-            })
-            RedisClient.store(`submissionResult_${problemId}_${userId}`, submissionInfo)
-            submissionResult = submissionInfo
-        }
+
 
         try {
-            let { finalVerdict, finalVerdictOfficial } = submissionResult
+            let { finalVerdict, finalVerdictOfficial } = await JudgeRepository.getSubmissionResult({ problemId, userId })
             return { finalVerdict, finalVerdictOfficial }
         } catch (error) {
             return { finalVerdict: null, finalVerdictOfficial: null }

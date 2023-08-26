@@ -3,13 +3,18 @@ const redis = require('redis');
 class RedisClient {
     static client = {}
     static initClient() {
+        console.log('created')
         this.client = redis.createClient()
+        this.client.connect()
     }
     static async queryCache(key) {
         return new Promise((resolve, reject) => {
             this.client.get(key, (err, data) => {
                 if (err) reject()
-                else resolve((data))
+                else {
+                    if (!data) data = {}
+                    resolve(data)
+                }
             })
         })
     }
