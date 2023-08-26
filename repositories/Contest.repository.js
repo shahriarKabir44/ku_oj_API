@@ -6,11 +6,13 @@ const JudgeRepository = require('./Judge.repository')
 
 
 module.exports = class ContestRepository {
-    static async findContestById(id) {
+    static async findContestById({ id }) {
         try {
-            let contest = RedisClient.queryCache(`contest_${id}`)
+
+            let contest = await RedisClient.queryCache(`contest_${id}`)
             return contest
         } catch (error) {
+
             let [contest] = await executeSqlAsync({
                 sql: `select * from contest where id=?;`,
                 values: [id]
@@ -54,7 +56,7 @@ module.exports = class ContestRepository {
     static async getProblemInfo({ id }) {
 
         let problem = await this.findProblemById(id)
-        let contest = this.findContestById(problem.contestId)
+        let contest = this.findContestById({ id: problem.contestId })
         problem.contestName = contest.title
         problem.contestCode = contest.code
 
@@ -111,7 +113,7 @@ module.exports = class ContestRepository {
 
         const problem = await this.findProblemById({ id: problemId })
 
-        return await this.findContestById(problem.contestId)
+        return await this.findContestById({ id: problem.contestId })
     }
 
 
@@ -127,7 +129,7 @@ module.exports = class ContestRepository {
     static async getFullContestDetails({ contestId }) {
         let data = {}
         await Promise.all([
-            this.findContestById(contestId)
+            this.findContestById({ id: contestId })
                 .then(([contestInfo]) => {
                     data = { ...data, ...contestInfo }
                 }),
@@ -148,11 +150,17 @@ module.exports = class ContestRepository {
                 ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
             values: [title, startTime, endTime, code, id]
         })
-
-        RedisClient.remove(`contest_${id}`)
-            .then(() => {
-                this.findContestById(id)
+        this.findContestById({ id })
+            .then(_contest => {
+                RedisClient.store(`contest_${id}`, {
+                    ..._contest,
+                    'title': title,
+                    'startTime': startTime,
+                    'endTime': endTime,
+                    'code': code
+                })
             })
+
     }
     static async updateProblemInfo({ id, title, code, points }) {
         await executeSqlAsync({
@@ -161,10 +169,16 @@ module.exports = class ContestRepository {
             values: [title, code, points, id]
         })
 
-        RedisClient.remove(`problem_${id}`)
-            .then(() => {
-                this.findProblemById(id)
+        RedisClient.queryCache(`problem_${id}`)
+            .then(_problem => {
+                RedisClient.store(`problem_${id}`, {
+                    ..._contest,
+                    'title': title,
+                    'points': points,
+                    'code': code
+                })
             })
+
     }
     static async hasSolvedProblem({ userId, problemId }) {
 
