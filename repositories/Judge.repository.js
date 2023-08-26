@@ -7,7 +7,6 @@ const {
     Worker,
 
 } = require("worker_threads");
-const ContestRepository = require("./Contest.repository");
 module.exports = class JudgeRepository {
     constructor({
         contestId,
@@ -36,7 +35,6 @@ module.exports = class JudgeRepository {
         this.path = `${this.submissionFileURL}`;
         this.execTime = execTime
         this.isNewSubmission = true
-        console.log(problemId)
     }
     async judgeSubmission() {
         await this.calculateErrorsAndACs()
@@ -91,7 +89,9 @@ module.exports = class JudgeRepository {
                 sql: `select * from submissionResult where contestantId=? and problemId=?;`,
                 values: [userId, problemId]
             })
-            RedisClient.store(redisQueryString, submissionResult)
+            RedisClient.store(redisQueryString, submissionResult).catch(e => {
+                console.log(e, "here")
+            })
             return submissionResult
         }
     }
@@ -127,7 +127,24 @@ module.exports = class JudgeRepository {
 
 
     }
+    async findContestById() {
+        try {
 
+            let contest = await RedisClient.queryCache(`contest_${this.contestId}`)
+            return contest
+
+        } catch (error) {
+
+            let [contest] = await executeSqlAsync({
+                sql: `select * from contest where id=?;`,
+                values: [this.contestId]
+            })
+            RedisClient.store(`contest_${this.contestId}`, contest).catch(e => {
+                console.log(e, "here")
+            })
+            return contest
+        }
+    }
     async setScoreWhenRejected() {
         this.updateSubmissionResult()
         this.updateContestResult()
@@ -138,8 +155,8 @@ module.exports = class JudgeRepository {
 
         this.score = - 5 * (this.isOfficial ? this.errorCount_official : this.errorCount_unofficial)
         if (this.verdict == 'AC') {
-            let { startTime } = await ContestRepository.findContestById(this.contestId)
-
+            let contest = await this.findContestById()
+            let { startTime } = contest
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
 
 
@@ -175,7 +192,9 @@ module.exports = class JudgeRepository {
                 'contestantId': this.userId,
                 'officialVerdicts': JSON.stringify(officialVerdicts)
             }
-            RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, _contestResult)
+            RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, _contestResult).catch(e => {
+                console.log(e, "here")
+            })
 
         }
         else {
@@ -195,7 +214,9 @@ module.exports = class JudgeRepository {
                 contestantId: this.userId,
                 verdicts: JSON.stringify(verdicts)
             }
-            RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, _contestResult)
+            RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, _contestResult).catch(e => {
+                console.log(e, "here")
+            })
 
 
 
@@ -223,7 +244,9 @@ module.exports = class JudgeRepository {
                         values: [this.score, JSON.stringify(official_description), JSON.stringify(officialVerdicts), this.contestId, this.userId]
                     }),
 
-                    RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, contestResult)
+                    RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, contestResult).catch(e => {
+                        console.log(e, "here")
+                    })
                 ])
 
             }
@@ -242,7 +265,9 @@ module.exports = class JudgeRepository {
                     values: [this.score, JSON.stringify(description), JSON.stringify(verdicts), this.contestId, this.userId]
                 }),
 
-                RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, contestResult)
+                RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, contestResult).catch(e => {
+                    console.log(e, "here")
+                })
             ])
             return
         }
@@ -285,7 +310,7 @@ module.exports = class JudgeRepository {
                         values: [this.userId, this.problemId, this.score, finalVerdict,
                         this.acCount_official, this.errorCount_official]
                     }),
-                    await RedisClient.store(`submissionResult_${this.problemId}_${this.userId}`, {
+                    RedisClient.store(`submissionResult_${this.problemId}_${this.userId}`, {
                         'contestantId': this.userId,
                         'problemId': this.problemId,
                         'official_points': this.score,
@@ -293,6 +318,8 @@ module.exports = class JudgeRepository {
 
                         'acCount_official': this.acCount_official,
                         'errorCount_official': this.errorCount_official
+                    }).catch(e => {
+                        console.log(e, "here")
                     })
                 ])
 
@@ -318,6 +345,8 @@ module.exports = class JudgeRepository {
                             'finalVerdictOfficial': finalVerdict,
                             'acCount_official': acCount_official,
                             'errorCount_official': errorCount_official
+                        }).catch(e => {
+                            console.log(e, "here")
                         })
                     })
             }
@@ -381,7 +410,6 @@ module.exports = class JudgeRepository {
     static async rejudgeContestSubmissions({ contestId }) {
 
         let worker = new Worker(__dirname + '/workerThreads/RejudgeAllSubmissionOfContest.worker.js')
-
         worker.postMessage({
             contestId
         })

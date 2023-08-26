@@ -15,15 +15,16 @@ const ContestRepository = require("../Contest.repository");
 const { RedisClient } = require("../../utils/RedisClient");
 
 
-parentPort.on('message', ({ submissions, problem }) => {
-    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem)
+parentPort.on('message', ({ submissions, problem, contestId }) => {
+    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId)
     userSubmissionReEvaluator.judgeSubmissions()
 })
 
 class UserSubmissionReEvaluator {
-    constructor(_submissions, _problem) {
+    constructor(_submissions, _problem, _contestId) {
         this.submissions = _submissions
         this.problem = _problem
+        this.contestId = _contestId
     }
     async judgeSubmissions() {
 
@@ -31,7 +32,8 @@ class UserSubmissionReEvaluator {
 
         this.submissions.forEach((submission) => {
             const judgeRepository = new JudgeRepository({
-                submissionId: submission.id
+                submissionId: submission.id,
+                contestId: this.contestId
             })
             promises.push((async () => {
                 try {
@@ -97,7 +99,7 @@ class UserSubmissionReEvaluator {
         if (latestRejection) finalVerdict = latestRejection.verdict
         if (oldestAcSubmission) {
 
-            let contest = await ContestRepository.findContestById(this.problem.contestId)
+            let contest = await ContestRepository.findContestById({ id: this.problem.contestId })
             let timeDiff = Math.max(parseInt((oldestAcSubmission.time - contest.startTime) / (3600 * 1000 * 10)), 0)
             let obtained = Math.max(problem.points - timeDiff * 5, 10)
 
@@ -132,7 +134,9 @@ class UserSubmissionReEvaluator {
                         ..._submissionResult, finalVerdictOfficial: verdictNumber,
                         official_points: score
                     }
-                    RedisClient.store(`submissionResult_${problemId}_${submittedBy}`, _submissionResult)
+                    RedisClient.store(`submissionResult_${problemId}_${submittedBy}`, _submissionResult).catch(e => {
+                        console.log(e, "here")
+                    })
 
                 })
 
@@ -157,7 +161,9 @@ class UserSubmissionReEvaluator {
                         official_description: JSON.stringify(official_description),
                         officialVerdicts: JSON.stringify(officialVerdicts)
                     }
-                    RedisClient.store(`contestResult_${contestId}_${submittedBy}`, _contestResult)
+                    RedisClient.store(`contestResult_${contestId}_${submittedBy}`, _contestResult).catch(e => {
+                        console.log(e, "here")
+                    })
                 })
 
         })

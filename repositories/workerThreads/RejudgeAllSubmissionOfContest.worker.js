@@ -18,7 +18,7 @@ parentPort.on('message', ({ contestId }) => {
 
             problems.forEach(problem => {
                 const worker = new Worker(__dirname + '/RejudgeProblemsSubmissions.worker.js');
-                worker.postMessage(problem)
+                worker.postMessage({ problem, contestId })
             })
         })
 })

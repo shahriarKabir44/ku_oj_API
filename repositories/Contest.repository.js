@@ -40,21 +40,20 @@ module.exports = class ContestRepository {
         })
     }
     static async findProblemById(id) {
-        let problem = null
         try {
-            problem = await RedisClient.queryCache(`problem_${id}`)
+            return await RedisClient.queryCache(`problem_${id}`)
         } catch (error) {
             let [problemInfo] = await executeSqlAsync({
                 sql: `select * from problem where id=?`,
                 values: [id]
             })
-            problem = problemInfo
-            RedisClient.store(problem)
+
+            RedisClient.store(`problem_${id}`, problemInfo)
+            return problemInfo
         }
-        return problem
+
     }
     static async getProblemInfo({ id }) {
-
         let problem = await this.findProblemById(id)
         let contest = this.findContestById({ id: problem.contestId })
         problem.contestName = contest.title
@@ -111,8 +110,7 @@ module.exports = class ContestRepository {
 
     static async searchContestByProblem({ problemId }) {
 
-        const problem = await this.findProblemById({ id: problemId })
-
+        const problem = await this.findProblemById(problemId)
         return await this.findContestById({ id: problem.contestId })
     }
 
@@ -130,7 +128,7 @@ module.exports = class ContestRepository {
         let data = {}
         await Promise.all([
             this.findContestById({ id: contestId })
-                .then(([contestInfo]) => {
+                .then((contestInfo) => {
                     data = { ...data, ...contestInfo }
                 }),
             executeSqlAsync({
@@ -172,7 +170,7 @@ module.exports = class ContestRepository {
         RedisClient.queryCache(`problem_${id}`)
             .then(_problem => {
                 RedisClient.store(`problem_${id}`, {
-                    ..._contest,
+                    ..._problem,
                     'title': title,
                     'points': points,
                     'code': code

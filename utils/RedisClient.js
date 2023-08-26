@@ -18,7 +18,12 @@ class RedisClient {
 
     }
     static async store(key, value) {
-        this.client.set(key, JSON.stringify(value), { expiresIn: 3600 * 2 })
+        try {
+            await this.client.set(key, JSON.stringify(value))
+
+        } catch (error) {
+        }
+        //  this.client.expire(key, 3600 * 2 * 1000, (err, data) => { })
     }
     static async remove(key) {
         return new Promise((resolve, reject) => {

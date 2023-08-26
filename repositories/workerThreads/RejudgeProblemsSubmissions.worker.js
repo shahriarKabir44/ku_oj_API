@@ -13,11 +13,11 @@ if (!isMainThread) {
 }
 
 
-parentPort.on('message', (problem) => {
-    getAllProblemSubmissions(problem)
+parentPort.on('message', ({ problem, contestId }) => {
+    getAllProblemSubmissions(problem, contestId)
 })
 
-async function getAllProblemSubmissions(problem) {
+async function getAllProblemSubmissions(problem, contestId) {
     let submissions = await executeSqlAsync({
         sql: `select * from submission where submission.problemId=? 
             order by submittedBy desc;`,
@@ -28,7 +28,7 @@ async function getAllProblemSubmissions(problem) {
     groups.forEach(group => {
         const rejudgeUserSubmissionsWorker = new Worker(__dirname + '/RejudgeUserSubmissions.worker.js')
 
-        rejudgeUserSubmissionsWorker.postMessage({ submissions: group, problem })
+        rejudgeUserSubmissionsWorker.postMessage({ submissions: group, problem, contestId })
     })
 
 }
