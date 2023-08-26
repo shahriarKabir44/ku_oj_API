@@ -47,8 +47,8 @@ ContestRouter.get('/getContestProblems/:id', (req, res) => {
             res.send({ contestProblems })
         })
 })
-ContestRouter.get('/getContestInfo/:id', (req, res) => {
-    ContestRepository.getContestInfo(req.params)
+ContestRouter.get('/findContestById/:id', (req, res) => {
+    ContestRepository.findContestById(req.params)
         .then(contestInfo => {
             res.send({ contestInfo })
         })

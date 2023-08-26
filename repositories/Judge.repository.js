@@ -1,11 +1,13 @@
 const { executeCPP } = require("../executors/executeCPP");
 const { runPython } = require("../executors/runPython");
+const { RedisClient } = require("../utils/RedisClient");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const QueryBuilder = require("../utils/queryBuilder");
 const {
     Worker,
 
 } = require("worker_threads");
+const ContestRepository = require("./Contest.repository");
 module.exports = class JudgeRepository {
     constructor({
         contestId,
@@ -66,14 +68,37 @@ module.exports = class JudgeRepository {
             return { ...error, id: this.submissionId }
         }
     }
+    async getContestResult() {
+        let redisQueryString = `contestResult_${this.contestId}_${this.userId}`
+        try {
+            return await RedisClient.queryCache(redisQueryString)
+        } catch (error) {
+            let [contestResult] = await executeSqlAsync({
+                sql: `select * from contestResult where contestId=? and contestantId=?;`,
+                values: [this.contestId, this.userId]
+            })
+            RedisClient.store(redisQueryString, contestResult)
+            return contestResult
+        }
+    }
 
+    async getSubmissionResult() {
+        let redisQueryString = `submissionResult_${this.problemId}_${this.userId}`
+        try {
+            return await RedisClient.queryCache(redisQueryString)
+        } catch (error) {
+            let [submissionResult] = await executeSqlAsync({
+                sql: `select * from submissionResult where contestantId=? and problemId=?;`,
+                values: [this.userId, this.problemId]
+            })
+            RedisClient.store(redisQueryString, submissionResult)
+            return submissionResult
+        }
+    }
 
     async calculateErrorsAndACs() {
 
-        let [submissionResult] = await executeSqlAsync({
-            sql: `select * from submissionResult where contestantId=? and problemId=?;`,
-            values: [this.userId, this.problemId]
-        })
+        let submissionResult = await this.getSubmissionResult()
         if (!submissionResult) {
             this.errorCount_official = 0
             this.acCount_unofficial = 0
@@ -113,10 +138,7 @@ module.exports = class JudgeRepository {
 
         this.score = - 5 * (this.isOfficial ? this.errorCount_official : this.errorCount_unofficial)
         if (this.verdict == 'AC') {
-            let [{ startTime }] = await executeSqlAsync({
-                sql: `select startTime from contest where id=?;`,
-                values: [this.contestId]
-            })
+            let { startTime } = await ContestRepository.findContestById(this.contestId)
 
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
 
@@ -141,10 +163,14 @@ module.exports = class JudgeRepository {
             let officialVerdicts = {}
             officialVerdicts[this.problemId] = this.verdict
             official_description[this.problemId] = this.score
-            executeSqlAsync({
+            await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('contestResult', ['official_points', 'official_description', 'contestId', 'contestantId', 'officialVerdicts']),
                 values: [this.score, JSON.stringify(official_description), this.contestId, this.userId, JSON.stringify(officialVerdicts)]
             })
+            RedisClient.remove(`contestResult_${this.contestId}_${this.userId}`)
+                .then(() => {
+                    this.getContestResult()
+                })
         }
         else {
             let description = {}
@@ -155,13 +181,14 @@ module.exports = class JudgeRepository {
                 sql: `insert into contestResult(points,description,contestId,contestantId,verdicts) values(?,?,?,?,?) ;`,
                 values: [this.score, JSON.stringify(description), this.contestId, this.userId, JSON.stringify(verdicts)]
             })
+            RedisClient.remove(`contestResult_${this.contestId}_${this.userId}`)
+                .then(() => {
+                    this.getContestResult()
+                })
         }
     }
     async updateContestResult() {
-        let [contestResult] = await executeSqlAsync({
-            sql: `select * from contestResult where contestId=? and contestantId=?;`,
-            values: [this.contestId, this.userId]
-        })
+        let contestResult = await this.getContestResult()
         if (!contestResult) {
             this.createContestRestult()
         }
@@ -177,6 +204,10 @@ module.exports = class JudgeRepository {
                     sql: `update contestResult set official_points=official_points+?, official_description=?, officialVerdicts=? where contestId=? and contestantId=?;`,
                     values: [this.score, JSON.stringify(official_description), JSON.stringify(officialVerdicts), this.contestId, this.userId]
                 })
+                RedisClient.remove(`contestResult_${this.contestId}_${this.userId}`)
+                    .then(() => {
+                        this.getContestResult()
+                    })
                 return
             }
             let { description, verdicts } = contestResult
@@ -189,6 +220,11 @@ module.exports = class JudgeRepository {
                 sql: `update contestResult set points=points+?, description=?, verdicts=? where contestId=? and contestantId=?;`,
                 values: [this.score, JSON.stringify(description), JSON.stringify(verdicts), this.contestId, this.userId]
             })
+            RedisClient.remove(`contestResult_${this.contestId}_${this.userId}`)
+                .then(() => {
+                    this.getContestResult()
+                })
+            return
         }
 
     }
@@ -218,7 +254,7 @@ module.exports = class JudgeRepository {
 
         if (this.isOfficial) {
             if (this.isNewSubmission) {
-                executeSqlAsync({
+                await executeSqlAsync({
                     sql: QueryBuilder.insertQuery('submissionResult', ['contestantId',
                         'problemId',
                         'official_points',
@@ -228,10 +264,15 @@ module.exports = class JudgeRepository {
                     values: [this.userId, this.problemId, this.score, finalVerdict,
                     this.acCount_official, this.errorCount_official]
                 })
+                RedisClient.remove(`submissionResult_${this.problemId}_${this.userId}`)
+                    .then(() => {
+                        this.getSubmissionResult()
+                    })
+                return
             }
             else {
                 const { acCount_official, errorCount_official, score, userId, problemId } = this
-                executeSqlAsync({
+                await executeSqlAsync({
                     sql: `${QueryBuilder.createUpdateQuery('submissionResult', [
                         'official_points',
                         'finalVerdictOfficial',
@@ -239,12 +280,17 @@ module.exports = class JudgeRepository {
                         'errorCount_official'])} where contestantId=? and problemId=?`,
                     values: [score, finalVerdict, acCount_official, errorCount_official, userId, problemId]
                 })
+                RedisClient.remove(`submissionResult_${this.problemId}_${this.userId}`)
+                    .then(() => {
+                        this.getSubmissionResult()
+                    })
+                return
             }
             return
         }
 
         if (this.isNewSubmission) {
-            executeSqlAsync({
+            await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('submissionResult', ['contestantId',
                     'problemId',
                     'points',
@@ -254,10 +300,15 @@ module.exports = class JudgeRepository {
                 values: [this.userId, this.problemId, this.score, finalVerdict,
                 this.acCount_unofficial, this.errorCount_unofficial]
             })
+            RedisClient.remove(`submissionResult_${this.problemId}_${this.userId}`)
+                .then(() => {
+                    this.getSubmissionResult()
+                })
+            return
         }
         else {
             const { acCount_unofficial, errorCount_unofficial, score, userId, problemId } = this
-            executeSqlAsync({
+            await executeSqlAsync({
                 sql: `${QueryBuilder.createUpdateQuery('submissionResult', [
                     'points',
                     'finalVerdict',
@@ -265,6 +316,11 @@ module.exports = class JudgeRepository {
                     'errorCount_unofficial'])} where contestantId=? and problemId=?`,
                 values: [score, finalVerdict, acCount_unofficial, errorCount_unofficial, userId, problemId]
             })
+            RedisClient.remove(`submissionResult_${this.problemId}_${this.userId}`)
+                .then(() => {
+                    this.getSubmissionResult()
+                })
+            return
         }
 
     }

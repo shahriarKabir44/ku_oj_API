@@ -50,7 +50,7 @@ module.exports = class ContestRepository {
             problem = problemInfo
             RedisClient.store(problem)
         }
-        let contest = this.findContestById()
+        let contest = this.findContestById(problem.contestId)
         problem.contestName = contest.title
         problem.contestCode = contest.code
 
@@ -102,33 +102,12 @@ module.exports = class ContestRepository {
             values: [statementFileURL, testcaseFileURL, outputFileURL, problemId]
         })
     }
-    static async getContestInfo({ id }) {
-        let contest = null;
-        try {
-            contest = await RedisClient.queryCache(`contest_${id}`)
-        } catch (error) {
-            let [contestInfo] = await executeSqlAsync({
-                sql: `SELECT *
-                from contest WHERE id=?;`,
-                values: [id]
-            })
-            contest = contestInfo
-            RedisClient.store(`contest_${id}`, contest)
-        }
 
-
-
-        return contest
-    }
     static async searchContestByProblem({ problemId }) {
 
-        const [contest] = await executeSqlAsync({
-            sql: `select * from contest 
-                where contest.id=(select contestId from problem where problem.id=?);`,
-            values: [problemId]
-        })
-        RedisClient.store(`contest_${contest.id}`, contest)
-        return contest
+        const problem = await this.getProblemInfo({ id: problemId })
+
+        return await this.findContestById(problem.contestId)
     }
 
 
@@ -186,17 +165,25 @@ module.exports = class ContestRepository {
         RedisClient.store(`problem_${id}`, problem)
     }
     static async hasSolvedProblem({ userId, problemId }) {
+        let submissionResult = {}
         try {
-            let [{ finalVerdict, finalVerdictOfficial }] = await executeSqlAsync({
+            submissionResult = await RedisClient.queryCache(`submissionResult_${problemId}_${userId}`)
+        } catch (error) {
+            let [submissionInfo] = await executeSqlAsync({
                 sql: `select  finalVerdict, finalVerdictOfficial from submissionResult
                 where contestantId=? and problemId=?;`,
                 values: [userId, problemId]
             })
+            RedisClient.store(`submissionResult_${problemId}_${userId}`, submissionInfo)
+            submissionResult = submissionInfo
+        }
+
+        try {
+            let { finalVerdict, finalVerdictOfficial } = submissionResult
             return { finalVerdict, finalVerdictOfficial }
         } catch (error) {
             return { finalVerdict: null, finalVerdictOfficial: null }
 
         }
-
     }
 }
