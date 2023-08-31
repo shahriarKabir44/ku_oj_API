@@ -36,7 +36,6 @@ module.exports = class JudgeRepository {
         this.path = `${this.submissionFileURL}`;
         this.execTime = execTime
         this.isNewContestSubmission = false
-        this.isNewSubmission = true
     }
     async judgeSubmission() {
         await this.getContestResult()
@@ -51,6 +50,7 @@ module.exports = class JudgeRepository {
             this.verdictType = data.type
             this.execTime = data.execTime
             this.verdict = data.verdict
+            console.log(this.verdict, this.execTime)
             this.setVerdict()
                 .then(() => {
                     this.setScoreWhenAccepted()
@@ -77,36 +77,24 @@ module.exports = class JudgeRepository {
                 sql: `select * from contestResult where contestId=? and contestantId=?;`,
                 values: [contestId, userId]
             })
+            console.log(contestResult, "here")
             RedisClient.store(redisQueryString, contestResult)
             return contestResult
         }
     }
 
-    static async getSubmissionResult({ problemId, userId }) {
-        let redisQueryString = `submissionResult_${problemId}_${userId}`
-        try {
-            return await RedisClient.queryCache(redisQueryString)
-        } catch (error) {
-            let [submissionResult] = await executeSqlAsync({
-                sql: `select * from submissionResult where contestantId=? and problemId=?;`,
-                values: [userId, problemId]
-            })
-            RedisClient.store(redisQueryString, submissionResult).catch(e => {
-                console.log(e, "here")
-            })
-            return submissionResult
-        }
-    }
+
 
     async getContestResult() {
 
         this.contestResult = await JudgeRepository.getContestResultFromCache(this)
         if (!this.contestResult) {
             this.isNewContestSubmission = true
-            let contestResult = new ContestResult(this)
+            let contestResult = new ContestResult({
+                _contestId: this.contestId,
+                _contestantId: this.userId
+            })
             this.contestResult = contestResult
-            contestResult.official_description[this.problemId] = [0, 0]
-            contestResult.description[this.problemId] = [0, 0]
             this.contestResult.official_description[this.problemId] = [0, 0, 0]
             this.contestResult.description[this.problemId] = [0, 0, 0]
 
@@ -116,7 +104,6 @@ module.exports = class JudgeRepository {
         }
     }
     async setVerdict() {
-
         return Promise.all([
             this.calculateScore(),
             executeSqlAsync({
@@ -148,7 +135,6 @@ module.exports = class JudgeRepository {
         }
     }
     async setScoreWhenRejected() {
-        this.updateSubmissionResult()
         this.updateContestResult()
     }
 
@@ -166,13 +152,16 @@ module.exports = class JudgeRepository {
             this.score += Math.max(this.points - timeDiff * 10, 10)
         }
         if (this.isOfficial) {
+            this.contestResult.official_points
             this.contestResult.official_description[this.problemId][2] += this.score
         }
         else this.contestResult.description[this.problemId][2] += this.score
 
+
     }
     async setScoreWhenAccepted() {
-        if ((this.isOfficial && this.contestResult.official_description[this.problemId][1] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][1] == 1)) {
+        console.log(this.contestResult)
+        if ((this.isOfficial && this.contestResult.official_description[this.problemId][0] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][0] == 1)) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [this.problemId]
@@ -181,13 +170,10 @@ module.exports = class JudgeRepository {
             this.updateContestResult()
         }
     }
-    async createContestRestult() {
-        return this.contestResult.store()
-    }
+
     async updateContestResult() {
         if (this.isNewContestSubmission) {
-            this.createContestRestult()
-            return
+            return this.contestResult.store()
         }
 
         this.contestResult.updateAndStore()

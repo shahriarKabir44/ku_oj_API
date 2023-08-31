@@ -1,10 +1,6 @@
 const {
-    Worker,
-    isMainThread,
-    parentPort,
-    workerData
+    parentPort
 } = require("worker_threads");
-const { executeSqlAsync } = require("../../utils/executeSqlAsync");
 const { runPython } = require("../../executors/runPython");
 const { initConnection } = require("../../utils/dbConnection");
 require('dotenv').config()
@@ -12,19 +8,25 @@ initConnection(process.env)
 const JudgeRepository = require("../Judge.repository");
 const { executeCPP } = require("../../executors/executeCPP");
 const ContestRepository = require("../Contest.repository");
-const { RedisClient } = require("../../utils/RedisClient");
+const { ContestResult } = require("../ContestResult.class");
 
 
-parentPort.on('message', ({ submissions, problem, contestId }) => {
-    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId)
+parentPort.on('message', ({ submissions, problem, contestId, contestantId, contestResult }) => {
+    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId, contestantId, contestResult)
     userSubmissionReEvaluator.judgeSubmissions()
+        .then(() => {
+            parentPort.postMessage(userSubmissionReEvaluator.contestResult)
+        })
 })
 
 class UserSubmissionReEvaluator {
-    constructor(_submissions, _problem, _contestId) {
+    constructor(_submissions, _problem, _contestId, _contestantId, _contestResult) {
         this.submissions = _submissions
         this.problem = _problem
         this.contestId = _contestId
+        this.contestantId = _contestantId
+        this.contestResult = _contestResult
+
     }
     async judgeSubmissions() {
 
@@ -64,12 +66,16 @@ class UserSubmissionReEvaluator {
         })
 
         await Promise.all(promises)
-        this.setScores()
-        this.setScores(false)
+        return Promise.all([
+            this.processOfficialSubmissions(this.submissions.filter(submission => submission.isOfficial)),
+            this.setUnofficialScores(this.submissions.filter(submission => !submission.isOfficial))
+        ])
 
     }
-    async setScores(isOfficial = true) {
-        const { submissions, problem } = this
+
+
+    async processSubmissionGroup(submissions) {
+        const { problem } = this
 
         let oldestAcSubmission = null
         let latestRejection = null
@@ -94,7 +100,6 @@ class UserSubmissionReEvaluator {
             }
         })
         let score = -rejectCounter * 5
-
         let finalVerdict = ''
         if (latestRejection) finalVerdict = latestRejection.verdict
         if (oldestAcSubmission) {
@@ -106,99 +111,39 @@ class UserSubmissionReEvaluator {
             score += obtained
             finalVerdict = 'AC'
         }
-        this.score = score
-        this.finalVerdict = finalVerdict
-        if (isOfficial) this.setOfficialScores(this.submissions.filter(submission => submission.isOfficial))
-        else
-            this.setUnofficialScores(this.submissions.filter(submission => !submission.isOfficial))
+        return { score, rejectCounter, finalVerdict }
+    }
+    async processOfficialSubmissions(submissions) {
+        let { score, rejectCounter, finalVerdict } = await this.processSubmissionGroup(submissions)
+        this.officialScore = score
+        this.setOfficialScores(rejectCounter, finalVerdict == 'AC' ? 1 : 0, finalVerdict)
+    }
+    async processUnofficialSubmissions(submissions) {
+        let { score, rejectCounter, finalVerdict } = await this.processSubmissionGroup(submissions)
+        this.unoffialScore = score
+        this.setUnofficialScores(rejectCounter, finalVerdict == 'AC' ? 1 : 0, finalVerdict)
     }
     /**
      * 
      * @param {[any]} submissions 
      */
-    async setOfficialScores(submissions) {
-        let verdictNumber = this.finalVerdict == 'AC' ? 1 : 0
-        if (!submissions.length) return
-        const { submittedBy } = submissions[0]
-        const problemId = this.problem.id
-        const { score, finalVerdict } = this;
-        const { contestId } = this.problem
-        executeSqlAsync({
-            sql: `update submissionResult set finalVerdictOfficial=?, official_points=?
-                where problemId=? and contestantId=? ;`,
-            values: [verdictNumber, score, problemId, submittedBy]
-        }).then(() => {
-            JudgeRepository.getSubmissionResult({ problemId, userId: submittedBy })
-                .then(_submissionResult => {
-                    _submissionResult = {
-                        ..._submissionResult, finalVerdictOfficial: verdictNumber,
-                        official_points: score
-                    }
-                    RedisClient.store(`submissionResult_${problemId}_${submittedBy}`, _submissionResult).catch(e => {
-                        console.log(e, "here")
-                    })
-
-                })
-
-
-        })
-        letcontestResult = await JudgeRepository.getContestResult({ contestId, userId: submittedBy })
-        let { official_description, officialVerdicts } = contestResult
-        officialVerdicts = JSON.parse(officialVerdicts)
-        officialVerdicts[problemId] = finalVerdict
-        official_description = JSON.parse(official_description)
-        official_description[problemId] = score
-        executeSqlAsync({
-            sql: `update contestResult set official_points=?,official_description=?, officialVerdicts=?
-                  where contestId=? and contestantId=?;`,
-            values: [score, JSON.stringify(official_description),
-                JSON.stringify(officialVerdicts), contestId, submittedBy]
-        }).then(() => {
-            JudgeRepository.getContestResult({ contestId, userId: submittedBy })
-                .then(_contestResult => {
-                    _contestResult = {
-                        ..._contestResult, official_points: score,
-                        official_description: JSON.stringify(official_description),
-                        officialVerdicts: JSON.stringify(officialVerdicts)
-                    }
-                    RedisClient.store(`contestResult_${contestId}_${submittedBy}`, _contestResult).catch(e => {
-                        console.log(e, "here")
-                    })
-                })
-
-        })
+    setOfficialScores(errorCount, hasAC, finalVerdict) {
+        let { official_description, officialVerdicts } = this.contestResult
+        officialVerdicts[problemId] = finalVerdict == 'AC' ? 1 : -1
+        official_description[problemId] = [hasAC, errorCount, this.officialScore]
     }
+
+
     /**
      * 
      * @param {[any]} submissions 
      */
-    async setUnofficialScores(submissions) {
-        let verdictNumber = this.finalVerdict == 'AC' ? 1 : 0
-        if (!submissions.length) return
+    setUnofficialScores(errorCount, hasAC, finalVerdict) {
+        let { description, verdicts } = this.contestResult
+        verdicts[problemId] = finalVerdict == 'AC' ? 1 : -1
+        description[problemId] = [hasAC, errorCount, this.officialScore]
 
-        const { submittedBy } = submissions[0]
-        const problemId = this.problem.id
-        const { score, finalVerdict } = this;
-        const { contestId } = this.problem;
-        executeSqlAsync({
-            sql: `update submissionResult set finalVerdict =?, points=?
-                where problemId=? and contestantId=? ;`,
-            values: [verdictNumber, score, problemId, submittedBy]
-        })
-        let [contestResult] = await executeSqlAsync({
-            sql: `select * from contestResult where contestId=? and contestantId=?;`,
-            values: [contestId, submittedBy]
-        })
-        let { description, verdicts } = contestResult
-        verdicts = JSON.parse(verdicts)
-        description = JSON.parse(description)
-        verdicts[problemId] = finalVerdict
-        description[problemId] = score
-        executeSqlAsync({
-            sql: `update contestResult set points=?,description=?,verdicts=?
-                  where contestId=? and contestantId=?;`,
-            values: [score, JSON.stringify(description), JSON.stringify(description), contestId, submittedBy]
-        })
+
     }
 }
 

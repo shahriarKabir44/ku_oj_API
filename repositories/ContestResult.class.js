@@ -3,7 +3,7 @@ const { executeSqlAsync } = require("../utils/executeSqlAsync")
 const QueryBuilder = require("../utils/queryBuilder")
 
 class ContestResult {
-    static fields = ['points', 'description', 'official_description', 'official_points', 'official_points', 'officialVerdicts', 'verdicts']
+    static fields = ['points', 'description', 'official_description', 'official_points', 'officialVerdicts', 'verdicts']
     constructor({ _contestId, _contestantId }) {
         this.contestId = _contestId
         this.contestantId = _contestantId
@@ -18,14 +18,15 @@ class ContestResult {
         let contestResult = new ContestResult({ _contestResult })
 
         contestResult.points = _contestResult.points
-        contestResult.description = JSON.stringify(_contestResult.description)
-        contestResult.official_description = JSON.stringify(_contestResult.official_description)
-        contestResult.official_points = _contestResult.official_points
-        contestResult.officialVerdicts = JSON.stringify(_contestResult.officialVerdicts)
-        contestResult.verdicts = JSON.stringify(_contestResult.verdicts)
+        contestResult.description = (_contestResult.description) ? JSON.parse(_contestResult.description) : {}
+        contestResult.official_description = (_contestResult.official_description) ? JSON.parse((_contestResult.official_description)) : {}
+        contestResult.official_points = _contestResult.official_points ? JSON.parse(_contestResult.official_points) : {}
+        contestResult.officialVerdicts = (_contestResult.officialVerdicts) ? JSON.parse(_contestResult.officialVerdicts) : {}
+        contestResult.verdicts = (_contestResult.verdicts) ? JSON.parse(_contestResult.verdicts) : {}
         return contestResult
     }
     async store() {
+        console.log('storing')
         return Promise.all([
             executeSqlAsync({
                 sql: QueryBuilder.insertQuery('contestResult', ['contestId',
@@ -49,7 +50,7 @@ class ContestResult {
                 sql: QueryBuilder.createUpdateQuery('contestResult', ContestResult.fields) + `
                 where contestId=? and contestantId=?;`,
                 values: [
-                    this.points, description, official_description, official_points, this.official_points, officialVerdicts, verdicts,
+                    this.points, description, official_description, this.official_points, this.official_points, officialVerdicts, verdicts,
                     this.contestId, this.contestantId
                 ]
             }),

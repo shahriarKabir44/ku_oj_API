@@ -181,12 +181,6 @@ module.exports = class ContestRepository {
     static async hasSolvedProblem({ userId, problemId }) {
 
 
-        try {
-            let { finalVerdict, finalVerdictOfficial } = await JudgeRepository.getSubmissionResult({ problemId, userId })
-            return { finalVerdict, finalVerdictOfficial }
-        } catch (error) {
-            return { finalVerdict: null, finalVerdictOfficial: null }
-
-        }
+        return {}
     }
 }
