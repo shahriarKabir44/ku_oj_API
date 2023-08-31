@@ -55,7 +55,7 @@ module.exports = class ContestRepository {
     }
     static async getProblemInfo({ id }) {
         let problem = await this.findProblemById(id)
-        let contest = this.findContestById({ id: problem.contestId })
+        let contest = await this.findContestById({ id: problem.contestId })
         problem.contestName = contest.title
         problem.contestCode = contest.code
 

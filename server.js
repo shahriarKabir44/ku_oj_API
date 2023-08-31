@@ -3,6 +3,7 @@ const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
 const { initConnection } = require('./utils/dbConnection');
 const { RedisClient } = require('./utils/RedisClient');
+const { executeSqlAsync } = require('./utils/executeSqlAsync');
 const workers = []
 const clients = new Map()
 require('dotenv').config({ path: `${__dirname}/.env.dev` })
@@ -47,7 +48,13 @@ function startExpress() {
     app.use('/submission', require('./routers/Submission.router'))
     app.use('/user', require('./routers/User.router'))
     app.get('/test', (req, res) => {
-        res.send({ message: "hello world!" })
+        executeSqlAsync({
+            sql: `select * from submission;`,
+            values: []
+        }).then(data => {
+            res.send(data)
+
+        })
     })
 }
 

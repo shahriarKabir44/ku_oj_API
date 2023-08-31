@@ -2,6 +2,7 @@ const { executeCPP } = require("../executors/executeCPP");
 const { runPython } = require("../executors/runPython");
 const { RedisClient } = require("../utils/RedisClient");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
+const { ContestResult } = require('./ContestResult.class')
 const QueryBuilder = require("../utils/queryBuilder");
 const {
     Worker,
@@ -34,10 +35,11 @@ module.exports = class JudgeRepository {
         this.verdictType = verdictType
         this.path = `${this.submissionFileURL}`;
         this.execTime = execTime
+        this.isNewContestSubmission = false
         this.isNewSubmission = true
     }
     async judgeSubmission() {
-        await this.calculateErrorsAndACs()
+        await this.getContestResult()
         try {
             let data = null
             if (this.ext == 'py') {
@@ -66,7 +68,7 @@ module.exports = class JudgeRepository {
             return { ...error, id: this.submissionId }
         }
     }
-    static async getContestResult({ contestId, userId }) {
+    static async getContestResultFromCache({ contestId, userId }) {
         let redisQueryString = `contestResult_${contestId}_${userId}`
         try {
             return await RedisClient.queryCache(redisQueryString)
@@ -96,25 +98,25 @@ module.exports = class JudgeRepository {
         }
     }
 
-    async calculateErrorsAndACs() {
+    async getContestResult() {
 
-        let submissionResult = await JudgeRepository.getSubmissionResult(this)
-        if (!submissionResult) {
-            this.errorCount_official = 0
-            this.acCount_unofficial = 0
-            this.errorCount_unofficial = 0
-            this.acCount_official = 0
+        this.contestResult = await JudgeRepository.getContestResultFromCache(this)
+        if (!this.contestResult) {
+            this.isNewContestSubmission = true
+            let contestResult = new ContestResult(this)
+            this.contestResult = contestResult
+            contestResult.official_description[this.problemId] = [0, 0]
+            contestResult.description[this.problemId] = [0, 0]
+            this.contestResult.official_description[this.problemId] = [0, 0, 0]
+            this.contestResult.description[this.problemId] = [0, 0, 0]
+
         }
         else {
-            this.isNewSubmission = false
-            let { errorCount_official, acCount_unofficial, errorCount_unofficial, acCount_official } = submissionResult
-            this.errorCount_official = errorCount_official
-            this.acCount_unofficial = acCount_unofficial
-            this.errorCount_unofficial = errorCount_unofficial
-            this.acCount_official = acCount_official
+            this.contestResult = ContestResult.extractData(this.contestResult)
         }
     }
     async setVerdict() {
+
         return Promise.all([
             this.calculateScore(),
             executeSqlAsync({
@@ -153,7 +155,8 @@ module.exports = class JudgeRepository {
     async calculateScore() {
         this.updateACandErrorCount()
 
-        this.score = - 5 * (this.isOfficial ? this.errorCount_official : this.errorCount_unofficial)
+        this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][0] :
+            this.contestResult.description[this.problemId][0])
         if (this.verdict == 'AC') {
             let contest = await this.findContestById()
             let { startTime } = contest
@@ -162,247 +165,60 @@ module.exports = class JudgeRepository {
 
             this.score += Math.max(this.points - timeDiff * 10, 10)
         }
+        if (this.isOfficial) {
+            this.contestResult.official_description[this.problemId][2] += this.score
+        }
+        else this.contestResult.description[this.problemId][2] += this.score
+
     }
     async setScoreWhenAccepted() {
-        if ((this.isOfficial && this.acCount_official == 1) || (!this.isOfficial && this.acCount_unofficial == 1)) {
+        if ((this.isOfficial && this.contestResult.official_description[this.problemId][1] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][1] == 1)) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [this.problemId]
             })
 
-            this.updateSubmissionResult()
             this.updateContestResult()
         }
     }
     async createContestRestult() {
-        if (this.isOfficial) {
-            let official_description = {}
-            let officialVerdicts = {}
-            officialVerdicts[this.problemId] = this.verdict
-            official_description[this.problemId] = this.score
-            await executeSqlAsync({
-                sql: QueryBuilder.insertQuery('contestResult', ['official_points', 'official_description', 'contestId', 'contestantId', 'officialVerdicts']),
-                values: [this.score, JSON.stringify(official_description), this.contestId, this.userId, JSON.stringify(officialVerdicts)]
-            })
-
-            let _contestResult = {
-                official_points: this.score,
-                'official_description': JSON.stringify(official_description),
-                'contestId': this.contestId,
-                'contestantId': this.userId,
-                'officialVerdicts': JSON.stringify(officialVerdicts)
-            }
-            RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, _contestResult).catch(e => {
-                console.log(e, "here")
-            })
-
-        }
-        else {
-            let description = {}
-            description[this.problemId] = this.score
-            let verdicts = {}
-            verdicts[this.problemId] = this.verdict
-            await executeSqlAsync({
-                sql: `insert into contestResult(points,description,contestId,contestantId,verdicts) values(?,?,?,?,?) ;`,
-                values: [this.score, JSON.stringify(description), this.contestId, this.userId, JSON.stringify(verdicts)]
-            })
-
-            let _contestResult = {
-                points: this.score,
-                description: JSON.stringify(description),
-                contestId: this.contestId,
-                contestantId: this.userId,
-                verdicts: JSON.stringify(verdicts)
-            }
-            RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, _contestResult).catch(e => {
-                console.log(e, "here")
-            })
-
-
-
-
-        }
+        return this.contestResult.store()
     }
     async updateContestResult() {
-        let contestResult = await JudgeRepository.getContestResult(this)
-        if (!contestResult) {
+        if (this.isNewContestSubmission) {
             this.createContestRestult()
-        }
-        else {
-            if (this.isOfficial) {
-                let { official_description, officialVerdicts } = contestResult
-                official_description = JSON.parse(official_description)
-                officialVerdicts = JSON.parse(officialVerdicts)
-                official_description[this.problemId] = this.score
-                officialVerdicts[this.problemId] = this.verdict
-                contestResult.officialVerdicts = JSON.stringify(officialVerdicts)
-                contestResult.official_description = JSON.stringify(official_description)
-
-                return await Promise.all([
-                    executeSqlAsync({
-                        sql: `update contestResult set official_points=official_points+?, official_description=?, officialVerdicts=? where contestId=? and contestantId=?;`,
-                        values: [this.score, JSON.stringify(official_description), JSON.stringify(officialVerdicts), this.contestId, this.userId]
-                    }),
-
-                    RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, contestResult).catch(e => {
-                        console.log(e, "here")
-                    })
-                ])
-
-            }
-            let { description, verdicts } = contestResult
-            description = JSON.parse(description)
-            verdicts = JSON.parse(verdicts)
-            description[this.problemId] = this.score
-            verdicts[this.problemId] = this.verdict
-            contestResult.verdicts = JSON.stringify(verdicts)
-            contestResult.description = JSON.stringify(description)
-
-
-            return await Promise.all([
-                executeSqlAsync({
-                    sql: `update contestResult set points=points+?, description=?, verdicts=? where contestId=? and contestantId=?;`,
-                    values: [this.score, JSON.stringify(description), JSON.stringify(verdicts), this.contestId, this.userId]
-                }),
-
-                RedisClient.store(`contestResult_${this.contestId}_${this.userId}`, contestResult).catch(e => {
-                    console.log(e, "here")
-                })
-            ])
             return
         }
+
+        this.contestResult.updateAndStore()
+        return
 
     }
     updateACandErrorCount() {
         if (this.isOfficial) {
             if (this.verdict != 'AC') {
-                this.errorCount_official++;
-
+                this.contestResult.official_description[this.problemId][1] += 1
+                if (this.contestResult.official_description[this.problemId][0] == 0) {
+                    this.contestResult.officialVerdicts[this.problemId] = -1
+                }
             }
             else {
-                this.acCount_official++
+                this.contestResult.official_description[this.problemId][0] += 1
+                this.contestResult.officialVerdicts[this.problemId] = 1
             }
         }
         else {
             if (this.verdict != 'AC') {
-                this.errorCount_unofficial++;
-
+                this.contestResult.description[this.problemId][1] += 1
+                if (this.contestResult.description[this.problemId][0] == 0) {
+                    this.contestResult.verdicts[this.problemId] = -1
+                }
             }
             else {
-                this.acCount_unofficial++
+                this.contestResult.description[this.problemId][0] += 1
+                this.contestResult.verdicts[this.problemId] = 1
             }
         }
-    }
-    async updateSubmissionResult() {
-        let finalVerdict = this.verdict == 'AC' ? 1 : 0
-
-
-        if (this.isOfficial) {
-            if (this.isNewSubmission) {
-                return Promise.all([
-                    executeSqlAsync({
-                        sql: QueryBuilder.insertQuery('submissionResult', ['contestantId',
-                            'problemId',
-                            'official_points',
-                            'finalVerdictOfficial',
-                            'acCount_official',
-                            'errorCount_official']),
-                        values: [this.userId, this.problemId, this.score, finalVerdict,
-                        this.acCount_official, this.errorCount_official]
-                    }),
-                    RedisClient.store(`submissionResult_${this.problemId}_${this.userId}`, {
-                        'contestantId': this.userId,
-                        'problemId': this.problemId,
-                        'official_points': this.score,
-                        'finalVerdictOfficial': finalVerdict,
-
-                        'acCount_official': this.acCount_official,
-                        'errorCount_official': this.errorCount_official
-                    }).catch(e => {
-                        console.log(e, "here")
-                    })
-                ])
-
-
-
-            }
-            else {
-                const { acCount_official, errorCount_official, score, userId, problemId } = this
-                executeSqlAsync({
-                    sql: `${QueryBuilder.createUpdateQuery('submissionResult', [
-                        'official_points',
-                        'finalVerdictOfficial',
-                        'acCount_official',
-                        'errorCount_official'])} where contestantId=? and problemId=?`,
-                    values: [score, finalVerdict, acCount_official, errorCount_official, userId, problemId]
-                })
-
-                JudgeRepository.getSubmissionResult(this)
-                    .then(_submissionResult => {
-                        RedisClient.store(`submissionResult_${this.problemId}_${this.userId}`, {
-                            ..._submissionResult,
-                            'official_points': score,
-                            'finalVerdictOfficial': finalVerdict,
-                            'acCount_official': acCount_official,
-                            'errorCount_official': errorCount_official
-                        }).catch(e => {
-                            console.log(e, "here")
-                        })
-                    })
-            }
-
-        }
-
-        if (this.isNewSubmission) {
-            return Promise.all([
-                executeSqlAsync({
-                    sql: QueryBuilder.insertQuery('submissionResult', ['contestantId',
-                        'problemId',
-                        'points',
-                        'finalVerdict',
-                        'acCount_unofficial',
-                        'errorCount_unofficial']),
-                    values: [this.userId, this.problemId, this.score, finalVerdict,
-                    this.acCount_unofficial, this.errorCount_unofficial]
-                }),
-                RedisClient.store(`submissionResult_${this.problemId}_${this.userId}`, {
-                    'contestantId': this.userId,
-                    'problemId': this.problemId,
-                    'points': this.score,
-                    'finalVerdict': finalVerdict,
-                    'acCount_unofficial': this.acCount_unofficial,
-                    'errorCount_unofficial': this.errorCount_unofficial
-                })
-            ])
-
-
-
-        }
-        else {
-            const { acCount_unofficial, errorCount_unofficial, score, userId, problemId } = this
-            return Promise.all([executeSqlAsync({
-                sql: `${QueryBuilder.createUpdateQuery('submissionResult', [
-                    'points',
-                    'finalVerdict',
-                    'acCount_unofficial',
-                    'errorCount_unofficial'])} where contestantId=? and problemId=?`,
-                values: [score, finalVerdict, acCount_unofficial, errorCount_unofficial, userId, problemId]
-            }),
-
-            RedisClient.queryCache(`submissionResult_${this.problemId}_${this.userId}`)
-                .then(_submissionResult => {
-                    RedisClient.store(`submissionResult_${this.problemId}_${this.userId}`, {
-                        ..._submissionResult,
-                        'points': score,
-                        'finalVerdict': finalVerdict,
-                        'acCount_unofficial': acCount_unofficial,
-                        'errorCount_unofficial': errorCount_unofficial
-                    })
-
-                })
-            ])
-        }
-
     }
 
 

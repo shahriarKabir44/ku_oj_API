@@ -10,7 +10,7 @@ class RedisClient {
         return new Promise((resolve, reject) => {
             this.client.get(key)
                 .then(data => {
-                    if (!data) reject({})
+                    if (!data) reject(null)
                     resolve(JSON.parse(data))
                 })
 
