@@ -3,8 +3,6 @@
 1687951042633create-table_problem.js
 1687951110792create-table_contestResult.js
 1687951420118create-table_submission.js
-1687951424935create-table_submissionResult.js
 1688232332442update-table_submission.js
 1688239858451update-table_problem.js
 1690652870993update-table_contestResult.js
-1691502423272update-table_submissionResult.js

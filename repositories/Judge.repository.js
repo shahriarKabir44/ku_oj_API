@@ -50,7 +50,6 @@ module.exports = class JudgeRepository {
             this.verdictType = data.type
             this.execTime = data.execTime
             this.verdict = data.verdict
-            console.log(this.verdict, this.execTime)
             this.setVerdict()
                 .then(() => {
                     this.setScoreWhenAccepted()
@@ -77,7 +76,6 @@ module.exports = class JudgeRepository {
                 sql: `select * from contestResult where contestId=? and contestantId=?;`,
                 values: [contestId, userId]
             })
-            console.log(contestResult, "here")
             RedisClient.store(redisQueryString, contestResult)
             return contestResult
         }
@@ -141,8 +139,8 @@ module.exports = class JudgeRepository {
     async calculateScore() {
         this.updateACandErrorCount()
 
-        this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][0] :
-            this.contestResult.description[this.problemId][0])
+        this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][1] :
+            this.contestResult.description[this.problemId][1])
         if (this.verdict == 'AC') {
             let contest = await this.findContestById()
             let { startTime } = contest
@@ -152,15 +150,18 @@ module.exports = class JudgeRepository {
             this.score += Math.max(this.points - timeDiff * 10, 10)
         }
         if (this.isOfficial) {
-            this.contestResult.official_points
+            this.contestResult.official_points += this.score
             this.contestResult.official_description[this.problemId][2] += this.score
         }
-        else this.contestResult.description[this.problemId][2] += this.score
+        else {
+            this.contestResult.description[this.problemId][2] += this.score;
+            this.contestResult.points += this.score
+
+        }
 
 
     }
     async setScoreWhenAccepted() {
-        console.log(this.contestResult)
         if ((this.isOfficial && this.contestResult.official_description[this.problemId][0] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][0] == 1)) {
             executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
@@ -176,8 +177,8 @@ module.exports = class JudgeRepository {
             return this.contestResult.store()
         }
 
-        this.contestResult.updateAndStore()
-        return
+        return this.contestResult.updateAndStore()
+
 
     }
     updateACandErrorCount() {
@@ -205,6 +206,7 @@ module.exports = class JudgeRepository {
                 this.contestResult.verdicts[this.problemId] = 1
             }
         }
+        console.log(this.verdict, this.contestResult)
     }
 
 

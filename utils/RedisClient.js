@@ -3,8 +3,11 @@ const redis = require('redis');
 class RedisClient {
     static client = {}
     static initClient() {
-        this.client = redis.createClient()
+        let client = redis.createClient()
+        this.client = client
+
         this.client.connect()
+
     }
     static async queryCache(key) {
         return new Promise((resolve, reject) => {
@@ -13,15 +16,23 @@ class RedisClient {
                     if (!data) reject(null)
                     resolve(JSON.parse(data))
                 })
+                .catch(e => {
+                    console.log(key)
+                })
 
         })
 
     }
     static async store(key, value) {
+        if (!value) return
         try {
-            await this.client.set(key, JSON.stringify(value))
+            return this.client.set(key, JSON.stringify(value), {
+                NX: true,
+                EX: 3600
+            })
 
         } catch (error) {
+            console.log(key, value)
         }
         //  this.client.expire(key, 3600 * 2 * 1000, (err, data) => { })
     }
