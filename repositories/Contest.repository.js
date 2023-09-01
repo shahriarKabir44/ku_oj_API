@@ -120,7 +120,7 @@ module.exports = class ContestRepository {
         return executeSqlAsync({
             sql: `select contestId,contestantId, (select userName from user where user.id=contestantId) as contestantName,
                 points, description,official_description,official_points,verdicts, officialVerdicts
-                from contestResult where contestId=?  order by ${!isOfficial ? 'points' : 'official_points'} desc limit ?,20 ; `,
+                from contestResult where contestId=? and ${isOfficial ? 'hasAttemptedOfficially' : 'hasAttemptedUnofficially'}=1 order by ${!isOfficial ? 'points' : 'official_points'} desc limit ?,20 ; `,
             values: [contestId, pageNumber]
         })
     }

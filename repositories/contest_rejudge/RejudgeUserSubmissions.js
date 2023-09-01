@@ -25,6 +25,10 @@ class UserSubmissionReEvaluator {
         let promises = []
 
         this.submissions.forEach((submission) => {
+            if (submission.isOfficial) {
+                this.contestResult.hasAttemptedOfficially = 1
+            }
+            else this.contestResult.hasAttemptedUnofficially = 1
             const judgeRepository = new JudgeRepository({
                 submissionId: submission.id,
                 contestId: this.contestId,
@@ -126,22 +130,6 @@ class UserSubmissionReEvaluator {
         if (!data) return
         this.contestResult.description[this.problem.id][2] = data.score
         this.contestResult.officialVerdicts[this.problem.id] = (data.finalVerdict == 'AC' ? 1 : 0)
-    }
-    /**
-     * 
-     * @param {[any]} submissions 
-     */
-
-
-
-    /**
-     * 
-     * @param {[any]} submissions 
-     */
-    setUnofficialScores(errorCount, hasAC, finalVerdict) {
-        let { description, verdicts } = this.contestResult
-        this.contestResult.verdicts[this.problem.id] = finalVerdict == 'AC' ? 1 : -1
-
     }
 }
 

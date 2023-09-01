@@ -98,6 +98,8 @@ module.exports = class JudgeRepository {
         }
     }
     async setVerdict() {
+        this.isOfficial ? this.contestResult.hasAttemptedOfficially = 1 : this.contestResult.hasAttemptedUnofficially = 1
+
         return Promise.all([
             this.calculateScore(),
             executeSqlAsync({

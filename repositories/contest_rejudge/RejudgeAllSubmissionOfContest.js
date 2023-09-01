@@ -38,7 +38,6 @@ async function rejudgeAllSubmissionOfContest({ contestId }) {
             for (let problemId in contestResult.description) {
                 contestResult.points += contestResult.description[problemId][2]
             }
-
             contestResult.updateAndStore()
         })())
     })
