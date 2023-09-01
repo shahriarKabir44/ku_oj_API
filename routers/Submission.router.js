@@ -1,7 +1,7 @@
 const SubmissionRouter = require('express').Router()
 const JudgeRepository = require('../repositories/Judge.repository')
 const SubmissionRepository = require('../repositories/Submission.repository')
-const { rejudgeAllSubmissionOfContest } = require('../repositories/utils/RejudgeAllSubmissionOfContest')
+const { rejudgeAllSubmissionOfContest } = require('../repositories/contest_rejudge/RejudgeAllSubmissionOfContest')
 const { upload } = require('../utils/fileManager')
 
 SubmissionRouter.post('/submit', [(req, res, next) => {
