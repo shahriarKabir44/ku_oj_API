@@ -2,7 +2,7 @@ const redis = require('redis');
 
 class RedisClient {
     static client = {}
-    static initClient() {
+    static init() {
         let client = redis.createClient()
         this.client = client
 
@@ -17,7 +17,6 @@ class RedisClient {
                     resolve(JSON.parse(data))
                 })
                 .catch(e => {
-                    console.log(key)
                 })
 
         })
@@ -32,7 +31,8 @@ class RedisClient {
             })
 
         } catch (error) {
-            console.log(key, value)
+
+            console.log(key, value, error)
         }
         //  this.client.expire(key, 3600 * 2 * 1000, (err, data) => { })
     }

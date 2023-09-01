@@ -8,6 +8,7 @@ const {
     Worker,
 
 } = require("worker_threads");
+const { rejudgeAllSubmissionOfContest } = require("./utils/RejudgeAllSubmissionOfContest");
 module.exports = class JudgeRepository {
     constructor({
         contestId,
@@ -158,6 +159,7 @@ module.exports = class JudgeRepository {
             this.contestResult.points += this.score
 
         }
+        console.log(this, this.contestResult, this.score, 'judgerepo')
 
 
     }
@@ -206,19 +208,13 @@ module.exports = class JudgeRepository {
                 this.contestResult.verdicts[this.problemId] = 1
             }
         }
-        console.log(this.verdict, this.contestResult)
     }
 
 
 
     static async rejudgeContestSubmissions({ contestId }) {
 
-        let worker = new Worker(__dirname + '/workerThreads/RejudgeAllSubmissionOfContest.worker.js')
-        worker.postMessage({
-            contestId
-        })
-
-
+        return rejudgeAllSubmissionOfContest({ contestId })
     }
 
 }

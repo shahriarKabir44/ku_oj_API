@@ -35,7 +35,7 @@ function startExpress() {
     const app = express()
 
     initConnection(process.env)
-    RedisClient.initClient()
+    RedisClient.init()
     app.listen(8080)
     app.use(require('cors')({
         origin: '*'

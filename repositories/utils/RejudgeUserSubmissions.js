@@ -9,15 +9,15 @@ const JudgeRepository = require("../Judge.repository");
 const { executeCPP } = require("../../executors/executeCPP");
 const ContestRepository = require("../Contest.repository");
 const { ContestResult } = require("../ContestResult.class");
+const { RedisClient } = require("../../utils/RedisClient");
 
 
-parentPort.on('message', ({ submissions, problem, contestId, contestantId, contestResult }) => {
+async function rejudgeUserSubmissions({ submissions, problem, contestId, contestantId, contestResult }) {
     let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId, contestantId, contestResult)
     userSubmissionReEvaluator.judgeSubmissions()
-        .then(() => {
-            parentPort.postMessage(userSubmissionReEvaluator.contestResult)
-        })
-})
+    return (userSubmissionReEvaluator.contestResult)
+}
+
 
 class UserSubmissionReEvaluator {
     constructor(_submissions, _problem, _contestId, _contestantId, _contestResult) {
@@ -26,7 +26,6 @@ class UserSubmissionReEvaluator {
         this.contestId = _contestId
         this.contestantId = _contestantId
         this.contestResult = _contestResult
-
     }
     async judgeSubmissions() {
 
@@ -35,8 +34,15 @@ class UserSubmissionReEvaluator {
         this.submissions.forEach((submission) => {
             const judgeRepository = new JudgeRepository({
                 submissionId: submission.id,
-                contestId: this.contestId
+                contestId: this.contestId,
+                problemId: this.problem.id,
+                userId: this.contestantId,
+                isOfficial: submission.isOfficial,
+
             })
+            judgeRepository.submissionId = submission.id
+            judgeRepository.contestResult = this.contestResult
+
             promises.push((async () => {
                 try {
                     let data = null
@@ -56,7 +62,9 @@ class UserSubmissionReEvaluator {
                     judgeRepository.verdictType = error.type
                     judgeRepository.execTime = error.execTime
                     judgeRepository.verdict = error.verdict
+
                     judgeRepository.setVerdict()
+
                     submission.verdict = error.verdict
                     submission.execTime = error.execTime
                 }
@@ -76,12 +84,11 @@ class UserSubmissionReEvaluator {
 
     async processSubmissionGroup(submissions) {
         const { problem } = this
-
         let oldestAcSubmission = null
         let latestRejection = null
         let rejectCounter = 0
         if (!submissions.length)
-            return
+            return null
         submissions.forEach(submission => {
             if (submission.verdict == 'AC') {
                 if (!oldestAcSubmission) {
@@ -114,14 +121,17 @@ class UserSubmissionReEvaluator {
         return { score, rejectCounter, finalVerdict }
     }
     async processOfficialSubmissions(submissions) {
-        let { score, rejectCounter, finalVerdict } = await this.processSubmissionGroup(submissions)
-        this.officialScore = score
-        this.setOfficialScores(rejectCounter, finalVerdict == 'AC' ? 1 : 0, finalVerdict)
+        let data = await this.processSubmissionGroup(submissions)
+        if (!data) return
+
+        this.officialScore = data.score
+        this.setOfficialScores(data.rejectCounter, data.finalVerdict == 'AC' ? 1 : 0, data.finalVerdict)
     }
     async processUnofficialSubmissions(submissions) {
-        let { score, rejectCounter, finalVerdict } = await this.processSubmissionGroup(submissions)
-        this.unoffialScore = score
-        this.setUnofficialScores(rejectCounter, finalVerdict == 'AC' ? 1 : 0, finalVerdict)
+        let data = await this.processSubmissionGroup(submissions)
+        if (!data) return
+        this.unoffialScore = data.score
+        this.setUnofficialScores(data.rejectCounter, data.finalVerdict == 'AC' ? 1 : 0, data.finalVerdict)
     }
     /**
      * 
@@ -129,8 +139,8 @@ class UserSubmissionReEvaluator {
      */
     setOfficialScores(errorCount, hasAC, finalVerdict) {
         let { official_description, officialVerdicts } = this.contestResult
-        officialVerdicts[problemId] = finalVerdict == 'AC' ? 1 : -1
-        official_description[problemId] = [hasAC, errorCount, this.officialScore]
+        officialVerdicts[this.problem.id] = finalVerdict == 'AC' ? 1 : -1
+        official_description[this.problem.id] = [hasAC, errorCount, this.officialScore]
     }
 
 
@@ -140,14 +150,14 @@ class UserSubmissionReEvaluator {
      */
     setUnofficialScores(errorCount, hasAC, finalVerdict) {
         let { description, verdicts } = this.contestResult
-        verdicts[problemId] = finalVerdict == 'AC' ? 1 : -1
-        description[problemId] = [hasAC, errorCount, this.officialScore]
+        verdicts[this.problem.id] = finalVerdict == 'AC' ? 1 : -1
+        description[this.problem.id] = [hasAC, errorCount, this.officialScore]
 
 
     }
 }
 
-
+module.exports = { rejudgeUserSubmissions }
 
 
 
