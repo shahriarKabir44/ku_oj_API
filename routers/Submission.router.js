@@ -1,6 +1,7 @@
 const SubmissionRouter = require('express').Router()
 const JudgeRepository = require('../repositories/Judge.repository')
 const SubmissionRepository = require('../repositories/Submission.repository')
+const { rejudgeAllSubmissionOfContest } = require('../repositories/utils/RejudgeAllSubmissionOfContest')
 const { upload } = require('../utils/fileManager')
 
 SubmissionRouter.post('/submit', [(req, res, next) => {
@@ -54,7 +55,7 @@ SubmissionRouter.get('/getContestSubmissions/:contestId/:pageNumber', (req, res)
 })
 
 SubmissionRouter.get('/rejudgeContestSubmissions/:contestId', (req, res) => {
-    JudgeRepository.rejudgeContestSubmissions(req.params)
+    rejudgeAllSubmissionOfContest(req.params)
     res.send({ data: 1 })
 })
 module.exports = SubmissionRouter

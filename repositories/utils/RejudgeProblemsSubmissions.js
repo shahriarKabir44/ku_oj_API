@@ -1,17 +1,16 @@
+const { executeSqlAsync } = require("../../utils/executeSqlAsync")
 const { rejudgeUserSubmissions } = require("./RejudgeUserSubmissions")
 
 
 
-
-async function rejudgeProblemsSubmissions(problem, contestId, contestResult) {
+async function rejudgeProblemsSubmissions({ problem, contestId, contestResult }) {
     let submissions = await executeSqlAsync({
         sql: `select * from submission where submission.problemId=? 
             order by submittedBy desc;`,
         values: [problem.id]
     })
     if (!submissions.length) {
-        parentPort.postMessage("done")
-        return
+        return null
     }
     let groups = groupSubmissionbyContestant(submissions)
     let promises = []
@@ -19,17 +18,18 @@ async function rejudgeProblemsSubmissions(problem, contestId, contestResult) {
         contestResult.official_description[problem.id] = [0, 0, 0]
         contestResult.description[problem.id] = [0, 0, 0]
 
-
         promises.push(rejudgeUserSubmissions({
             submissions: group,
             problem,
             contestId,
-            contestantId: group.submittedBy,
+            contestantId: group[0].submittedBy,
             contestResult
+        }).then(e => {
         }))
 
     })
-    return Promise.all(promises)
+    await Promise.all(promises)
+    return contestResult
 
 }
 /**

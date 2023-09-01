@@ -1,21 +1,14 @@
-const {
-    parentPort
-} = require("worker_threads");
+
 const { runPython } = require("../../executors/runPython");
-const { initConnection } = require("../../utils/dbConnection");
-require('dotenv').config()
-initConnection(process.env)
 const JudgeRepository = require("../Judge.repository");
 const { executeCPP } = require("../../executors/executeCPP");
 const ContestRepository = require("../Contest.repository");
-const { ContestResult } = require("../ContestResult.class");
-const { RedisClient } = require("../../utils/RedisClient");
 
 
 async function rejudgeUserSubmissions({ submissions, problem, contestId, contestantId, contestResult }) {
     let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId, contestantId, contestResult)
-    userSubmissionReEvaluator.judgeSubmissions()
-    return (userSubmissionReEvaluator.contestResult)
+    return userSubmissionReEvaluator.judgeSubmissions()
+
 }
 
 
@@ -38,11 +31,11 @@ class UserSubmissionReEvaluator {
                 problemId: this.problem.id,
                 userId: this.contestantId,
                 isOfficial: submission.isOfficial,
-
+                time: submission.time,
+                points: this.problem.points
             })
-            judgeRepository.submissionId = submission.id
             judgeRepository.contestResult = this.contestResult
-
+            judgeRepository.time = submission.time
             promises.push((async () => {
                 try {
                     let data = null
@@ -62,11 +55,11 @@ class UserSubmissionReEvaluator {
                     judgeRepository.verdictType = error.type
                     judgeRepository.execTime = error.execTime
                     judgeRepository.verdict = error.verdict
+                    submission.verdict = error.verdict
+                    submission.execTime = error.execTime
 
                     judgeRepository.setVerdict()
 
-                    submission.verdict = error.verdict
-                    submission.execTime = error.execTime
                 }
 
             })())
@@ -74,10 +67,11 @@ class UserSubmissionReEvaluator {
         })
 
         await Promise.all(promises)
-        return Promise.all([
+        await Promise.all([
             this.processOfficialSubmissions(this.submissions.filter(submission => submission.isOfficial)),
-            this.setUnofficialScores(this.submissions.filter(submission => !submission.isOfficial))
+            this.processUnofficialSubmissions(this.submissions.filter(submission => !submission.isOfficial))
         ])
+        return this.contestResult
 
     }
 
@@ -124,24 +118,20 @@ class UserSubmissionReEvaluator {
         let data = await this.processSubmissionGroup(submissions)
         if (!data) return
 
-        this.officialScore = data.score
-        this.setOfficialScores(data.rejectCounter, data.finalVerdict == 'AC' ? 1 : 0, data.finalVerdict)
+        this.contestResult.official_description[this.problem.id][2] = data.score
+        this.contestResult.officialVerdicts[this.problem.id] = (data.finalVerdict == 'AC' ? 1 : 0)
     }
     async processUnofficialSubmissions(submissions) {
         let data = await this.processSubmissionGroup(submissions)
         if (!data) return
-        this.unoffialScore = data.score
-        this.setUnofficialScores(data.rejectCounter, data.finalVerdict == 'AC' ? 1 : 0, data.finalVerdict)
+        this.contestResult.description[this.problem.id][2] = data.score
+        this.contestResult.officialVerdicts[this.problem.id] = (data.finalVerdict == 'AC' ? 1 : 0)
     }
     /**
      * 
      * @param {[any]} submissions 
      */
-    setOfficialScores(errorCount, hasAC, finalVerdict) {
-        let { official_description, officialVerdicts } = this.contestResult
-        officialVerdicts[this.problem.id] = finalVerdict == 'AC' ? 1 : -1
-        official_description[this.problem.id] = [hasAC, errorCount, this.officialScore]
-    }
+
 
 
     /**
@@ -150,9 +140,7 @@ class UserSubmissionReEvaluator {
      */
     setUnofficialScores(errorCount, hasAC, finalVerdict) {
         let { description, verdicts } = this.contestResult
-        verdicts[this.problem.id] = finalVerdict == 'AC' ? 1 : -1
-        description[this.problem.id] = [hasAC, errorCount, this.officialScore]
-
+        this.contestResult.verdicts[this.problem.id] = finalVerdict == 'AC' ? 1 : -1
 
     }
 }

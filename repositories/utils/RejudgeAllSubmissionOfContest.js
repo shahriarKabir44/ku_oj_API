@@ -1,13 +1,16 @@
 
 const { executeSqlAsync } = require("../../utils/executeSqlAsync");
-const ContestRepository = require("../Contest.repository");
+
 const { ContestResult } = require("../ContestResult.class");
 const { rejudgeProblemsSubmissions } = require("./RejudgeProblemsSubmissions");
 
 
 async function rejudgeAllSubmissionOfContest({ contestId }) {
-    RedisClient.init()
-    let problems = await ContestRepository.getContestProblems({ id: contestId })
+    let problems = await executeSqlAsync({
+        sql: `SELECT * from problem WHERE
+                    problem.contestId=?;`,
+        values: [contestId]
+    })
     let _contestResults = await executeSqlAsync({
         sql: `select * from contestResult where contestId=?`,
         values: [contestId]
@@ -16,13 +19,30 @@ async function rejudgeAllSubmissionOfContest({ contestId }) {
         _contestId: contestId,
         _contestantId: contestantId
     }))
-    let promises = []
+    let _promises = []
     contestResults.forEach(contestResult => {
-        problems.forEach(problem => {
-            promises.push(rejudgeProblemsSubmissions({ problem, contestId, contestResult }))
-        })
+        _promises.push((async () => {
+
+            let promises = []
+
+            problems.forEach(problem => {
+                promises.push(rejudgeProblemsSubmissions({ problem, contestId, contestResult }))
+            })
+            await Promise.all(promises)
+
+            contestResult.official_points = 0
+            for (let problemId in contestResult.official_description) {
+                contestResult.official_points += contestResult.official_description[problemId][2]
+            }
+            contestResult.points = 0
+            for (let problemId in contestResult.description) {
+                contestResult.points += contestResult.description[problemId][2]
+            }
+
+            contestResult.updateAndStore()
+        })())
     })
-    return Promise.all(promises)
+    return Promise.all(_promises)
 
 }
 

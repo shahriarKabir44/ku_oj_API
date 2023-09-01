@@ -4,11 +4,6 @@ const { RedisClient } = require("../utils/RedisClient");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const { ContestResult } = require('./ContestResult.class')
 const QueryBuilder = require("../utils/queryBuilder");
-const {
-    Worker,
-
-} = require("worker_threads");
-const { rejudgeAllSubmissionOfContest } = require("./utils/RejudgeAllSubmissionOfContest");
 module.exports = class JudgeRepository {
     constructor({
         contestId,
@@ -127,10 +122,27 @@ module.exports = class JudgeRepository {
                 sql: `select * from contest where id=?;`,
                 values: [this.contestId]
             })
-            RedisClient.store(`contest_${this.contestId}`, contest).catch(e => {
+            RedisClient.store(`contest_${this.contestId}`, contest)
+            return contest
+        }
+    }
+    async findProblemById() {
+        let query = `problem_${this.problemId}`
+        try {
+
+            let contest = await RedisClient.queryCache(query)
+            return contest
+
+        } catch (error) {
+
+            let [problem] = await executeSqlAsync({
+                sql: `select * from problem where id=?;`,
+                values: [this.problemId]
+            })
+            RedisClient.store(query, problem).catch(e => {
                 console.log(e, "here")
             })
-            return contest
+            return problem
         }
     }
     async setScoreWhenRejected() {
@@ -143,23 +155,24 @@ module.exports = class JudgeRepository {
         this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][1] :
             this.contestResult.description[this.problemId][1])
         if (this.verdict == 'AC') {
+            let contestResult = structuredClone(this.contestResult)
+
             let contest = await this.findContestById()
             let { startTime } = contest
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
 
-
+            this.contestResult = contestResult
             this.score += Math.max(this.points - timeDiff * 10, 10)
         }
         if (this.isOfficial) {
-            this.contestResult.official_points += this.score
+            this.contestResult.official_points = this.score
             this.contestResult.official_description[this.problemId][2] += this.score
         }
         else {
-            this.contestResult.description[this.problemId][2] += this.score;
+            this.contestResult.description[this.problemId][2] = this.score;
             this.contestResult.points += this.score
 
         }
-        console.log(this, this.contestResult, this.score, 'judgerepo')
 
 
     }
@@ -212,9 +225,6 @@ module.exports = class JudgeRepository {
 
 
 
-    static async rejudgeContestSubmissions({ contestId }) {
 
-        return rejudgeAllSubmissionOfContest({ contestId })
-    }
 
 }
