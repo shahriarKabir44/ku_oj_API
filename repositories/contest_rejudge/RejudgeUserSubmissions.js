@@ -107,27 +107,30 @@ class UserSubmissionReEvaluator {
         let score = -rejectCounter * 5
         let finalVerdict = ''
         if (latestRejection) finalVerdict = latestRejection.verdict
+        let oldestACTime = null
         if (oldestAcSubmission) {
 
             let contest = await ContestRepository.findContestById({ id: this.problem.contestId })
             let timeDiff = Math.max(parseInt((oldestAcSubmission.time - contest.startTime) / (3600 * 1000 * 10)), 0)
             let obtained = Math.max(problem.points - timeDiff * 5, 10)
-
+            oldestACTime = parseInt((oldestAcSubmission.time - contest.startTime) / (1000))
             score += obtained
             finalVerdict = 'AC'
         }
-        return { score, rejectCounter, finalVerdict }
+        return { score, rejectCounter, finalVerdict, oldestACTime }
     }
     async processOfficialSubmissions(submissions) {
         let data = await this.processSubmissionGroup(submissions)
         if (!data) return
 
+        this.contestResult.official_ac_time[this.problem.id] = data.oldestACTime
         this.contestResult.official_description[this.problem.id][2] = data.score
         this.contestResult.officialVerdicts[this.problem.id] = (data.finalVerdict == 'AC' ? 1 : 0)
     }
     async processUnofficialSubmissions(submissions) {
         let data = await this.processSubmissionGroup(submissions)
         if (!data) return
+        this.contestResult.unofficial_ac_time[this.problem.id] = data.oldestACTime
         this.contestResult.description[this.problem.id][2] = data.score
         this.contestResult.officialVerdicts[this.problem.id] = (data.finalVerdict == 'AC' ? 1 : 0)
     }

@@ -97,6 +97,9 @@ module.exports = class JudgeRepository {
         if (!this.contestResult[this.problemId]) {
             this.contestResult.official_description[this.problemId] = [0, 0, 0]
             this.contestResult.description[this.problemId] = [0, 0, 0]
+            this.contestResult.official_ac_time[this.problemId] = 0
+            this.contestResult.unofficial_ac_time[this.problemId] = 0
+
         }
     }
     async setVerdict() {
@@ -105,9 +108,9 @@ module.exports = class JudgeRepository {
         return Promise.all([
             this.calculateScore(),
             executeSqlAsync({
-                sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime'])}
+                sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime', 'isOfficial'])}
                  where id=?;`,
-                values: [this.verdict, this.execTime, this.submissionId]
+                values: [this.verdict, this.execTime, this.isOfficial, this.submissionId]
             })
         ])
 
@@ -160,10 +163,15 @@ module.exports = class JudgeRepository {
             this.contestResult.description[this.problemId][1])
         if (this.verdict == 'AC') {
             let contestResult = this.contestResult.clone()
-
             let contest = await this.findContestById()
             let { startTime } = contest
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
+            if (this.isOfficial) {
+                contestResult.official_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
+            }
+            else {
+                contestResult.unofficial_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
+            }
 
             this.contestResult = contestResult
             this.score += Math.max(this.points - timeDiff * 10, 10)

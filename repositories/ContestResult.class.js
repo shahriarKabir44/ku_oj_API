@@ -3,7 +3,7 @@ const { executeSqlAsync } = require("../utils/executeSqlAsync")
 const QueryBuilder = require("../utils/queryBuilder")
 
 class ContestResult {
-    static fields = ['points', 'description', 'official_description', 'official_points', 'officialVerdicts', 'verdicts', 'hasAttemptedOfficially', 'hasAttemptedUnofficially']
+    static fields = ['points', 'description', 'official_description', 'official_points', 'officialVerdicts', 'verdicts', 'hasAttemptedOfficially', 'hasAttemptedUnofficially', 'unofficial_ac_time', 'official_ac_time']
     constructor({ _contestId, _contestantId }) {
         this.contestId = _contestId
         this.contestantId = _contestantId
@@ -15,6 +15,8 @@ class ContestResult {
         this.verdicts = {}
         this.hasAttemptedOfficially = 0
         this.hasAttemptedUnofficially = 0
+        this.unofficial_ac_time = {}
+        this.official_ac_time = {}
     }
     static extractData(_contestResult) {
         let contestResult = new ContestResult({ _contestId: _contestResult.contestId, _contestantId: _contestResult.contestantId })
@@ -26,6 +28,9 @@ class ContestResult {
         contestResult.verdicts = (_contestResult.verdicts) ? JSON.parse(_contestResult.verdicts) : {}
         contestResult.hasAttemptedOfficially = _contestResult.hasAttemptedOfficially
         contestResult.hasAttemptedUnofficially = _contestResult.hasAttemptedUnofficially
+        contestResult.official_ac_time = _contestResult.official_ac_time ? JSON.parse(_contestResult.official_ac_time) : {}
+        contestResult.unofficial_ac_time = _contestResult.unofficial_ac_time ? JSON.parse(_contestResult.unofficial_ac_time) : {}
+
         return contestResult
     }
     async store() {
@@ -37,7 +42,8 @@ class ContestResult {
                 ]),
                 values: [this.contestId, this.contestantId, this.points, JSON.stringify(this.description),
                 JSON.stringify(this.official_description), this.official_points,
-                JSON.stringify(this.officialVerdicts), JSON.stringify(this.verdicts), this.hasAttemptedOfficially, this.hasAttemptedUnofficially]
+                JSON.stringify(this.officialVerdicts), JSON.stringify(this.verdicts), this.hasAttemptedOfficially, this.hasAttemptedUnofficially,
+                JSON.stringify(this.unofficial_ac_time), JSON.stringify(this.official_ac_time)]
             }),
             this.storeInRedis()
         ])
@@ -52,6 +58,9 @@ class ContestResult {
         contestResult.verdicts = structuredClone(this.verdicts)
         contestResult.hasAttemptedOfficially = this.hasAttemptedOfficially
         contestResult.hasAttemptedUnofficially = this.hasAttemptedUnofficially
+        contestResult.official_ac_time = structuredClone(this.official_ac_time)
+        contestResult.unofficial_ac_time = structuredClone(this.unofficial_ac_time)
+
         return contestResult
 
     }
@@ -65,11 +74,12 @@ class ContestResult {
                 sql: QueryBuilder.createUpdateQuery('contestResult', ['points',
                     'description',
                     'official_description',
-                    'official_points', 'officialVerdicts', 'verdicts', 'hasAttemptedUnofficially', 'hasAttemptedOfficially']) + `
+                    'official_points', 'officialVerdicts', 'verdicts',
+                    'hasAttemptedUnofficially', 'hasAttemptedOfficially', 'official_ac_time', 'unofficial_ac_time']) + `
                 where contestId=? and contestantId=?;`,
                 values: [
                     this.points, description, official_description, this.official_points, officialVerdicts, verdicts,
-                    this.hasAttemptedUnofficially, this.hasAttemptedOfficially, this.contestId, this.contestantId
+                    this.hasAttemptedUnofficially, this.hasAttemptedOfficially, JSON.stringify(this.official_ac_time), JSON.stringify(this.unofficial_ac_time), this.contestId, this.contestantId
                 ]
             }),
             this.storeInRedis()
@@ -87,7 +97,10 @@ class ContestResult {
             'officialVerdicts': JSON.stringify(this.officialVerdicts),
             'verdicts': JSON.stringify(this.verdicts),
             hasAttemptedOfficially,
-            hasAttemptedUnofficially
+            hasAttemptedUnofficially,
+            'official_ac_time': JSON.stringify(this.official_ac_time),
+            'unofficial_ac_time': JSON.stringify(this.unofficial_ac_time),
+
         }).catch(e => {
             console.log(e, "here")
         })
