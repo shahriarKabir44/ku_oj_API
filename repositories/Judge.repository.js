@@ -89,12 +89,14 @@ module.exports = class JudgeRepository {
                 _contestantId: this.userId
             })
             this.contestResult = contestResult
-            this.contestResult.official_description[this.problemId] = [0, 0, 0]
-            this.contestResult.description[this.problemId] = [0, 0, 0]
-
         }
         else {
             this.contestResult = ContestResult.extractData(this.contestResult)
+
+        }
+        if (!this.contestResult[this.problemId]) {
+            this.contestResult.official_description[this.problemId] = [0, 0, 0]
+            this.contestResult.description[this.problemId] = [0, 0, 0]
         }
     }
     async setVerdict() {
@@ -157,7 +159,7 @@ module.exports = class JudgeRepository {
         this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][1] :
             this.contestResult.description[this.problemId][1])
         if (this.verdict == 'AC') {
-            let contestResult = structuredClone(this.contestResult)
+            let contestResult = this.contestResult.clone()
 
             let contest = await this.findContestById()
             let { startTime } = contest
@@ -193,7 +195,6 @@ module.exports = class JudgeRepository {
         if (this.isNewContestSubmission) {
             return this.contestResult.store()
         }
-
         return this.contestResult.updateAndStore()
 
 

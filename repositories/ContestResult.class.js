@@ -42,6 +42,19 @@ class ContestResult {
             this.storeInRedis()
         ])
     }
+    clone() {
+        let contestResult = new ContestResult({ _contestId: this.contestId, _contestantId: this.contestantId })
+        contestResult.points = this.points
+        contestResult.description = structuredClone(this.description)
+        contestResult.official_description = structuredClone(this.official_description)
+        contestResult.official_points = this.official_points
+        contestResult.officialVerdicts = structuredClone(this.officialVerdicts)
+        contestResult.verdicts = structuredClone(this.verdicts)
+        contestResult.hasAttemptedOfficially = this.hasAttemptedOfficially
+        contestResult.hasAttemptedUnofficially = this.hasAttemptedUnofficially
+        return contestResult
+
+    }
     async updateAndStore() {
         let verdicts = JSON.stringify(this.verdicts)
         let description = JSON.stringify(this.description)
