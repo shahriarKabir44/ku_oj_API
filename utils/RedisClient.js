@@ -27,7 +27,7 @@ class RedisClient {
         try {
             return this.client.set(key, JSON.stringify(value), {
                 NX: true,
-                EX: 3600
+                EX: 3600 * 2
             })
 
         } catch (error) {

@@ -1,5 +1,6 @@
 const { getFiles } = require('../executors/getFiles')
 const ContestRepository = require('../repositories/Contest.repository')
+const JudgeRepository = require('../repositories/Judge.repository')
 const { validateJWT } = require('../utils/validateJWT')
 
 const ContestRouter = require('express').Router()
@@ -68,6 +69,12 @@ ContestRouter.get('/searchContestByProblem/:problemId', (req, res) => {
         })
 })
 
+ContestRouter.get('/getContestResult/:userId/:contestId', (req, res) => {
+    JudgeRepository.getContestResultFromCache(req.params)
+        .then(contestResult => {
+            res.send(contestResult)
+        })
+})
 
 ContestRouter.get('/hasSolvedProblem/:userId/:problemId', (req, res) => {
     ContestRepository.hasSolvedProblem(req.params)
