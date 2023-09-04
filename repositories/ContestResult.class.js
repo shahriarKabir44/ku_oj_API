@@ -18,19 +18,34 @@ class ContestResult {
         this.unofficial_ac_time = {}
         this.official_ac_time = {}
     }
-    static extractData(_contestResult) {
+    static async find({ contestId, contestantId }) {
+        let redisQueryString = `contestResult_${contestId}_${contestantId}`
+        try {
+            return (await RedisClient.queryCache(redisQueryString))
+        } catch (error) {
+            let _contestResult = this.extractDataFromDB(await executeSqlAsync({
+                sql: `select * from contestResult where contestId=? and contestantId=?;`,
+                values: [contestId, userId]
+            }))
+            _contestResult.storeInRedis()
+            return _contestResult
+        }
+    }
+
+    static extractDataFromDB([_contestResult]) {
+        console.log(_contestResult)
+        if (!_contestResult) return null
         let contestResult = new ContestResult({ _contestId: _contestResult.contestId, _contestantId: _contestResult.contestantId })
         contestResult.points = _contestResult.points
         contestResult.description = (_contestResult.description) ? JSON.parse(_contestResult.description) : {}
-        contestResult.official_description = (_contestResult.official_description) ? JSON.parse((_contestResult.official_description)) : {}
+        contestResult.official_description = (_contestResult.official_description) ? JSON.parse(_contestResult.official_description) : {}
         contestResult.official_points = _contestResult.official_points
-        contestResult.officialVerdicts = (_contestResult.officialVerdicts) ? JSON.parse(_contestResult.officialVerdicts) : {}
+        contestResult.officialVerdicts = (_contestResult.officialVerdicts) ? JSON.parse(_contestResult.official_description) : {}
         contestResult.verdicts = (_contestResult.verdicts) ? JSON.parse(_contestResult.verdicts) : {}
         contestResult.hasAttemptedOfficially = _contestResult.hasAttemptedOfficially
         contestResult.hasAttemptedUnofficially = _contestResult.hasAttemptedUnofficially
         contestResult.official_ac_time = _contestResult.official_ac_time ? JSON.parse(_contestResult.official_ac_time) : {}
         contestResult.unofficial_ac_time = _contestResult.unofficial_ac_time ? JSON.parse(_contestResult.unofficial_ac_time) : {}
-
         return contestResult
     }
     async store() {
@@ -66,6 +81,7 @@ class ContestResult {
     }
     async updateAndStore() {
         let verdicts = JSON.stringify(this.verdicts)
+
         let description = JSON.stringify(this.description)
         let officialVerdicts = JSON.stringify(this.officialVerdicts)
         let official_description = JSON.stringify(this.official_description)
@@ -91,15 +107,15 @@ class ContestResult {
             contestId,
             contestantId,
             points,
-            'description': JSON.stringify(this.description),
-            'official_description': JSON.stringify(this.official_description),
+            'description': (this.description),
+            'official_description': (this.official_description),
             official_points,
-            'officialVerdicts': JSON.stringify(this.officialVerdicts),
-            'verdicts': JSON.stringify(this.verdicts),
+            'officialVerdicts': (this.officialVerdicts),
+            'verdicts': (this.verdicts),
             hasAttemptedOfficially,
             hasAttemptedUnofficially,
-            'official_ac_time': JSON.stringify(this.official_ac_time),
-            'unofficial_ac_time': JSON.stringify(this.unofficial_ac_time),
+            'official_ac_time': (this.official_ac_time),
+            'unofficial_ac_time': (this.unofficial_ac_time),
 
         }).catch(e => {
             console.log(e, "here")

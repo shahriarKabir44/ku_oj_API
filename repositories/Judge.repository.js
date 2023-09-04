@@ -63,25 +63,16 @@ module.exports = class JudgeRepository {
             return { ...error, id: this.submissionId }
         }
     }
-    static async getContestResultFromCache({ contestId, userId }) {
-        let redisQueryString = `contestResult_${contestId}_${userId}`
-        try {
-            return await RedisClient.queryCache(redisQueryString)
-        } catch (error) {
-            let [contestResult] = await executeSqlAsync({
-                sql: `select * from contestResult where contestId=? and contestantId=?;`,
-                values: [contestId, userId]
-            })
-            RedisClient.store(redisQueryString, contestResult)
-            return contestResult
-        }
-    }
+
 
 
 
     async getContestResult() {
 
-        this.contestResult = await JudgeRepository.getContestResultFromCache(this)
+        this.contestResult = await ContestResult.find({
+            contestId: this.contestId,
+            contestantId: this.userId
+        })
         if (!this.contestResult) {
             this.isNewContestSubmission = true
             let contestResult = new ContestResult({
@@ -90,10 +81,7 @@ module.exports = class JudgeRepository {
             })
             this.contestResult = contestResult
         }
-        else {
-            this.contestResult = ContestResult.extractData(this.contestResult)
 
-        }
         if (!this.contestResult[this.problemId]) {
             this.contestResult.official_description[this.problemId] = [0, 0, 0]
             this.contestResult.description[this.problemId] = [0, 0, 0]

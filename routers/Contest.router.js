@@ -1,5 +1,6 @@
 const { getFiles } = require('../executors/getFiles')
 const ContestRepository = require('../repositories/Contest.repository')
+const { ContestResult } = require('../repositories/ContestResult.class')
 const JudgeRepository = require('../repositories/Judge.repository')
 const { validateJWT } = require('../utils/validateJWT')
 
@@ -69,8 +70,8 @@ ContestRouter.get('/searchContestByProblem/:problemId', (req, res) => {
         })
 })
 
-ContestRouter.get('/getContestResult/:userId/:contestId', (req, res) => {
-    JudgeRepository.getContestResultFromCache(req.params)
+ContestRouter.get('/getContestResult/:contestantId/:contestId', (req, res) => {
+    ContestResult.find(req.params)
         .then(contestResult => {
             res.send(contestResult)
         })
