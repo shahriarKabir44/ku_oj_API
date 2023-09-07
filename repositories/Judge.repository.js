@@ -75,11 +75,10 @@ module.exports = class JudgeRepository {
         })
         if (!this.contestResult) {
             this.isNewContestSubmission = true
-            let contestResult = new ContestResult({
+            this.contestResult = new ContestResult({
                 _contestId: this.contestId,
                 _contestantId: this.userId
             })
-            this.contestResult = contestResult
         }
 
         if (!this.contestResult[this.problemId]) {
@@ -221,9 +220,5 @@ module.exports = class JudgeRepository {
             }
         }
     }
-
-
-
-
 
 }

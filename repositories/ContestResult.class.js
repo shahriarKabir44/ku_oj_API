@@ -25,15 +25,15 @@ class ContestResult {
         } catch (error) {
             let _contestResult = this.extractDataFromDB(await executeSqlAsync({
                 sql: `select * from contestResult where contestId=? and contestantId=?;`,
-                values: [contestId, userId]
+                values: [contestId, contestantId]
             }))
-            _contestResult.storeInRedis()
+            if (_contestResult)
+                _contestResult.storeInRedis()
             return _contestResult
         }
     }
 
     static extractDataFromDB([_contestResult]) {
-        console.log(_contestResult)
         if (!_contestResult) return null
         let contestResult = new ContestResult({ _contestId: _contestResult.contestId, _contestantId: _contestResult.contestantId })
         contestResult.points = _contestResult.points
