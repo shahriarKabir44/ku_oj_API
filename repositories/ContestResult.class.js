@@ -21,18 +21,34 @@ class ContestResult {
     static async find({ contestId, contestantId }) {
         let redisQueryString = `contestResult_${contestId}_${contestantId}`
         try {
-            return (await RedisClient.queryCache(redisQueryString))
+            return this.extractDataFromRedis(await RedisClient.queryCache(redisQueryString))
         } catch (error) {
             let _contestResult = this.extractDataFromDB(await executeSqlAsync({
                 sql: `select * from contestResult where contestId=? and contestantId=?;`,
                 values: [contestId, contestantId]
             }))
-            if (_contestResult)
+            if (_contestResult) {
                 _contestResult.storeInRedis()
-            return _contestResult
+                return _contestResult
+
+            }
+            else {
+                return null
+            }
         }
     }
-
+    /**
+     * 
+     * @param {ContestResult} _contestResult 
+     */
+    static extractDataFromRedis(_contestResult) {
+        let { contestId, contestantId } = _contestResult
+        let contestResult = new ContestResult({ _contestantId: contestantId, _contestId: contestId })
+        for (let key in _contestResult) {
+            contestResult[key] = _contestResult[key]
+        }
+        return contestResult
+    }
     static extractDataFromDB([_contestResult]) {
         if (!_contestResult) return null
         let contestResult = new ContestResult({ _contestId: _contestResult.contestId, _contestantId: _contestResult.contestantId })

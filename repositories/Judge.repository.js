@@ -73,6 +73,7 @@ module.exports = class JudgeRepository {
             contestId: this.contestId,
             contestantId: this.userId
         })
+
         if (!this.contestResult) {
             this.isNewContestSubmission = true
             this.contestResult = new ContestResult({
@@ -145,11 +146,11 @@ module.exports = class JudgeRepository {
 
     async calculateScore() {
         this.updateACandErrorCount()
+        let contestResult = this.contestResult.clone()
 
         this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][1] :
             this.contestResult.description[this.problemId][1])
         if (this.verdict == 'AC') {
-            let contestResult = this.contestResult.clone()
             let contest = await this.findContestById()
             let { startTime } = contest
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
@@ -160,7 +161,6 @@ module.exports = class JudgeRepository {
                 contestResult.unofficial_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
             }
 
-            this.contestResult = contestResult
             this.score += Math.max(this.points - timeDiff * 10, 10)
         }
         if (this.isOfficial) {
@@ -172,6 +172,7 @@ module.exports = class JudgeRepository {
             this.contestResult.points += this.score
 
         }
+        this.contestResult = contestResult
 
 
     }
