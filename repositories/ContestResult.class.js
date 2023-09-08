@@ -81,16 +81,10 @@ class ContestResult {
     }
     clone() {
         let contestResult = new ContestResult({ _contestId: this.contestId, _contestantId: this.contestantId })
-        contestResult.points = this.points
-        contestResult.description = structuredClone(this.description)
-        contestResult.official_description = structuredClone(this.official_description)
-        contestResult.official_points = this.official_points
-        contestResult.officialVerdicts = structuredClone(this.officialVerdicts)
-        contestResult.verdicts = structuredClone(this.verdicts)
-        contestResult.hasAttemptedOfficially = this.hasAttemptedOfficially
-        contestResult.hasAttemptedUnofficially = this.hasAttemptedUnofficially
-        contestResult.official_ac_time = structuredClone(this.official_ac_time)
-        contestResult.unofficial_ac_time = structuredClone(this.unofficial_ac_time)
+        let copy = structuredClone(this)
+        for (let [key, val] of Object.entries(copy)) {
+            contestResult[key] = (val)
+        }
 
         return contestResult
 

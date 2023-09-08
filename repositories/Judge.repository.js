@@ -35,33 +35,25 @@ module.exports = class JudgeRepository {
     }
     async judgeSubmission() {
         await this.getContestResult()
-        try {
-            let data = null
-            if (this.ext == 'py') {
-                data = await runPython(this.problemId, this.path)
-            }
-            else if (this.ext == 'cpp') {
-                data = await executeCPP(this.problemId, this.path)
-            }
-            this.verdictType = data.type
-            this.execTime = data.execTime
-            this.verdict = data.verdict
-            this.setVerdict()
-                .then(() => {
-                    this.setScoreWhenAccepted()
-                })
-
-            return { ...data, id: this.submissionId }
-        } catch (error) {
-            this.verdictType = error.type
-            this.execTime = 'N/A'
-            this.verdict = error.verdict
-            this.setVerdict()
-                .then(() => {
-                    this.setScoreWhenRejected()
-                })
-            return { ...error, id: this.submissionId }
+        let data = null
+        if (this.ext == 'py') {
+            data = await runPython(this.problemId, this.path)
         }
+        else if (this.ext == 'cpp') {
+            data = await executeCPP(this.problemId, this.path)
+        }
+        this.verdictType = data.type
+        this.execTime = data.execTime
+        this.verdict = data.verdict
+        this.setVerdict()
+            .then(() => {
+                if (this.verdict == 'AC')
+                    this.setScoreWhenAccepted()
+                else this.setScoreWhenRejected()
+            })
+
+        return { ...data, id: this.submissionId }
+
     }
 
 
@@ -74,7 +66,7 @@ module.exports = class JudgeRepository {
             contestantId: this.userId
         })
 
-        if (!this.contestResult) {
+        if (this.contestResult == null) {
             this.isNewContestSubmission = true
             this.contestResult = new ContestResult({
                 _contestId: this.contestId,
@@ -82,13 +74,14 @@ module.exports = class JudgeRepository {
             })
         }
 
-        if (!this.contestResult[this.problemId]) {
+        if (this.contestResult.official_description[this.problemId] == null) {
             this.contestResult.official_description[this.problemId] = [0, 0, 0]
             this.contestResult.description[this.problemId] = [0, 0, 0]
             this.contestResult.official_ac_time[this.problemId] = 0
             this.contestResult.unofficial_ac_time[this.problemId] = 0
 
         }
+
     }
     async setVerdict() {
         this.isOfficial ? this.contestResult.hasAttemptedOfficially = 1 : this.contestResult.hasAttemptedUnofficially = 1
@@ -143,33 +136,37 @@ module.exports = class JudgeRepository {
     async setScoreWhenRejected() {
         this.updateContestResult()
     }
-
     async calculateScore() {
         this.updateACandErrorCount()
         let contestResult = this.contestResult.clone()
-
-        this.score = - 5 * (this.isOfficial ? this.contestResult.official_description[this.problemId][1] :
-            this.contestResult.description[this.problemId][1])
-        if (this.verdict == 'AC') {
+        if (this.verdict != 'AC') {
+            if (this.isOfficial) {
+                contestResult.official_points -= 5
+                contestResult.official_description[this.problemId][2] -= 5
+            }
+            else {
+                contestResult.description[this.problemId][2] -= 5;
+                contestResult.points -= 5
+            }
+        }
+        else {
             let contest = await this.findContestById()
             let { startTime } = contest
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
+            let score = Math.max(this.points - timeDiff * 10, 10)
+
             if (this.isOfficial) {
+                contestResult.official_points += score
+                contestResult.official_description[this.problemId][2] += score
+
                 contestResult.official_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
             }
             else {
+                contestResult.points += score
+                contestResult.description[this.problemId][2] += score
+
                 contestResult.unofficial_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
             }
-
-            this.score += Math.max(this.points - timeDiff * 10, 10)
-        }
-        if (this.isOfficial) {
-            this.contestResult.official_points = this.score
-            this.contestResult.official_description[this.problemId][2] += this.score
-        }
-        else {
-            this.contestResult.description[this.problemId][2] = this.score;
-            this.contestResult.points += this.score
 
         }
         this.contestResult = contestResult

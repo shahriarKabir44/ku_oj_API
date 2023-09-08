@@ -4,7 +4,6 @@ const { testOutput } = require("./utils/testOutput");
 
 
 async function runPython(problemId, filePath) {
-    let errorMessage = []
     const child = spawn("python", [__dirname + filePath]);
     child.on('error', (e) => {
     })

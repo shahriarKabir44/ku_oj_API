@@ -16,7 +16,7 @@ async function executeCPP(problemId, filePath) {
                     resolve(data)
                 })
                 .catch(err => {
-                    reject(err)
+                    resolve(err)
                 })
 
         });

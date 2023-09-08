@@ -56,6 +56,9 @@ SubmissionRouter.get('/getContestSubmissions/:contestId/:pageNumber', (req, res)
 
 SubmissionRouter.get('/rejudgeContestSubmissions/:contestId', (req, res) => {
     rejudgeAllSubmissionOfContest(req.params)
-    res.send({ data: 1 })
+        .then(data => {
+            res.send({ data: 1 })
+
+        })
 })
 module.exports = SubmissionRouter
