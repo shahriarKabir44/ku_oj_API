@@ -2,10 +2,46 @@ const { RedisClient } = require('../utils/RedisClient')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 
 const QueryBuilder = require('../utils/queryBuilder')
+const { ContestResult } = require('./ContestResult.class')
 const JudgeRepository = require('./Judge.repository')
 
 
 module.exports = class ContestRepository {
+    static async beginContest(contest) {
+        if (contest.status != 1) return
+        if (contest.startTime > (new Date()) * 1) return
+        let timeSpan = contest.endTime - contest.startTime
+        contest.status = 1
+        executeSqlAsync({
+            sql: `update contest set status=1 where id=?;`,
+            values: [contest.id]
+        })
+        RedisClient.store(`contest_${contest.id}`, contest)
+        setTimeout(() => {
+            contest.status = 2
+            executeSqlAsync({
+                sql: `update contest set status=2 where id=?;`,
+                values: [contest.id]
+            })
+            RedisClient.store(`contest_${contest.id}`, contest)
+        }, timeSpan)
+    }
+    static async setStandings(contestId) {
+        let contestResults = await executeSqlAsync({
+            sql: `select * from contestResult where hasAttemptedOfficially=1 and contestId=? order by official_points desc ;`,
+            values: [contestId]
+        })
+        contestResults.forEach((contestResult, index) => {
+            contestResult.position = index + 1
+            const { contestantId } = contestResult
+            executeSqlAsync({
+                sql: `update contestResult set position=? where contestId=? and contestantId=?;`,
+                values: [index + 1, contestId, contestantId]
+            })
+            let _contestResult = ContestResult.extractDataFromDB([contestResult])
+            _contestResult.storeInRedis()
+        });
+    }
     static async findContestById({ id }) {
         try {
 

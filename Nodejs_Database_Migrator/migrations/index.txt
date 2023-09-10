@@ -8,3 +8,5 @@
 1690652870993update-table_contestResult.js
 1693608868435update-table_contestResult.js
 1693637907433update-table_contestResult.js
+1694374094315update-table_contest.js
+1694374182534update-table_contestResult.js

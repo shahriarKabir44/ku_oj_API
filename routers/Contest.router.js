@@ -52,6 +52,7 @@ ContestRouter.get('/getContestProblems/:id', (req, res) => {
 ContestRouter.get('/findContestById/:id', (req, res) => {
     ContestRepository.findContestById(req.params)
         .then(contestInfo => {
+            ContestRepository.beginContest(contestInfo)
             res.send({ contestInfo })
         })
 })

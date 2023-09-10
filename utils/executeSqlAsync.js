@@ -1,5 +1,10 @@
 const { connection } = require('./dbConnection')
 
+/**
+ * 
+ * @param {any} param
+ * @returns Promise<[any]>
+ */
 function executeSqlAsync({ sql, values }) {
     return new Promise(function (resolve, reject) {
         connection.connection.query({

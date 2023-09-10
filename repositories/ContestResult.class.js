@@ -17,6 +17,7 @@ class ContestResult {
         this.hasAttemptedUnofficially = 0
         this.unofficial_ac_time = {}
         this.official_ac_time = {}
+        this.position = 0
     }
     static async find({ contestId, contestantId }) {
         let redisQueryString = `contestResult_${contestId}_${contestantId}`
@@ -49,10 +50,16 @@ class ContestResult {
         }
         return contestResult
     }
+    /**
+     * 
+     * @param {[ContestResult]} param0 
+     * @returns 
+     */
     static extractDataFromDB([_contestResult]) {
         if (!_contestResult) return null
         let contestResult = new ContestResult({ _contestId: _contestResult.contestId, _contestantId: _contestResult.contestantId })
         contestResult.points = _contestResult.points
+        contestResult.position = _contestResult.position
         contestResult.description = (_contestResult.description) ? JSON.parse(_contestResult.description) : {}
         contestResult.official_description = (_contestResult.official_description) ? JSON.parse(_contestResult.official_description) : {}
         contestResult.official_points = _contestResult.official_points
@@ -112,7 +119,7 @@ class ContestResult {
         ])
     }
     async storeInRedis() {
-        const { hasAttemptedOfficially, hasAttemptedUnofficially, contestId, contestantId, points, official_points } = this
+        const { hasAttemptedOfficially, hasAttemptedUnofficially, contestId, position, contestantId, points, official_points } = this
         return RedisClient.store(`contestResult_${this.contestId}_${this.contestantId}`, {
             contestId,
             contestantId,
@@ -126,6 +133,7 @@ class ContestResult {
             hasAttemptedUnofficially,
             'official_ac_time': (this.official_ac_time),
             'unofficial_ac_time': (this.unofficial_ac_time),
+            position
 
         }).catch(e => {
             console.log(e, "here")
