@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
             tempPath += `/submissions/${contestid}/${postedby}/${problemid}`
             const { submissionid, ext } = req.headers
 
-            if (ext == 'cpp') {
+            if (ext == 'cpp' || ext == 'java') {
                 path += `/${submissionid}`
                 tempPath += `/${submissionid}`
             }
@@ -40,6 +40,9 @@ const storage = multer.diskStorage({
         if (filetype == 'submission') {
             const { submissionid } = req.headers
             filename = submissionid
+            if (req.headers.ext == 'java') {
+                filename = 'Solution'
+            }
         }
         else if (filetype == 'testcaseinput') {
 

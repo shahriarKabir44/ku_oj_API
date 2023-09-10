@@ -1,9 +1,8 @@
-const { executeCPP } = require("../executors/executeCPP");
-const { runPython } = require("../executors/runPython");
 const { RedisClient } = require("../utils/RedisClient");
 const { executeSqlAsync } = require("../utils/executeSqlAsync");
 const { ContestResult } = require('./ContestResult.class')
 const QueryBuilder = require("../utils/queryBuilder");
+const { executeCode } = require("../executors/executeCode");
 module.exports = class JudgeRepository {
     constructor({
         contestId,
@@ -35,13 +34,7 @@ module.exports = class JudgeRepository {
     }
     async judgeSubmission() {
         await this.getContestResult()
-        let data = null
-        if (this.ext == 'py') {
-            data = await runPython(this.problemId, this.path)
-        }
-        else if (this.ext == 'cpp') {
-            data = await executeCPP(this.problemId, this.path)
-        }
+        let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.ext })
         this.verdictType = data.type
         this.execTime = data.execTime
         this.verdict = data.verdict
@@ -159,13 +152,13 @@ module.exports = class JudgeRepository {
                 contestResult.official_points += score
                 contestResult.official_description[this.problemId][2] += score
 
-                contestResult.official_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
+                contestResult.official_ac_time[this.problemId] = parseInt((this.time - startTime) / 1)
             }
             else {
                 contestResult.points += score
                 contestResult.description[this.problemId][2] += score
 
-                contestResult.unofficial_ac_time[this.problemId] = parseInt((this.time - startTime) / 1000)
+                contestResult.unofficial_ac_time[this.problemId] = parseInt((this.time - startTime) / 1)
             }
 
         }

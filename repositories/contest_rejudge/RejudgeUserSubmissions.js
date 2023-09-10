@@ -1,8 +1,6 @@
-
-const { runPython } = require("../../executors/runPython");
 const JudgeRepository = require("../Judge.repository");
-const { executeCPP } = require("../../executors/executeCPP");
 const ContestRepository = require("../Contest.repository");
+const { executeCode } = require("../../executors/executeCode");
 
 
 async function rejudgeUserSubmissions({ submissions, problem, contestId, contestantId, contestResult }) {
@@ -41,30 +39,14 @@ class UserSubmissionReEvaluator {
             judgeRepository.contestResult = this.contestResult
             judgeRepository.time = submission.time
             promises.push((async () => {
-                try {
-                    let data = null
-                    if (submission.language == 'python') {
-                        data = await runPython(submission.problemId, submission.submissionFileURL)
-                    }
-                    else if (submission.language == 'c++') {
-                        data = await executeCPP(submission.problemId, submission.submissionFileURL)
-                    }
-                    submission.verdict = data.verdict
-                    submission.execTime = data.execTime
-                    judgeRepository.verdictType = data.type
-                    judgeRepository.execTime = data.execTime
-                    judgeRepository.verdict = data.verdict
-                    judgeRepository.setVerdict()
-                } catch (error) {
-                    judgeRepository.verdictType = error.type
-                    judgeRepository.execTime = error.execTime
-                    judgeRepository.verdict = error.verdict
-                    submission.verdict = error.verdict
-                    submission.execTime = error.execTime
+                let data = await executeCode(submission)
+                submission.verdict = data.verdict
+                submission.execTime = data.execTime
+                judgeRepository.verdictType = data.type
+                judgeRepository.execTime = data.execTime
+                judgeRepository.verdict = data.verdict
+                judgeRepository.setVerdict()
 
-                    judgeRepository.setVerdict()
-
-                }
 
             })())
 
@@ -113,7 +95,7 @@ class UserSubmissionReEvaluator {
             let contest = await ContestRepository.findContestById({ id: this.problem.contestId })
             let timeDiff = Math.max(parseInt((oldestAcSubmission.time - contest.startTime) / (3600 * 1000 * 10)), 0)
             let obtained = Math.max(problem.points - timeDiff * 5, 10)
-            oldestACTime = parseInt((oldestAcSubmission.time - contest.startTime) / (1000))
+            oldestACTime = parseInt((oldestAcSubmission.time - contest.startTime) / (1))
             score += obtained
             finalVerdict = 'AC'
         }

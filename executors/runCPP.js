@@ -1,7 +1,7 @@
 const { exec, spawn } = require("child_process");
 const fs = require('fs');
 const { testOutput } = require("./utils/testOutput");
-async function executeCPP(problemId, filePath) {
+async function runCPP(problemId, filePath) {
     return new Promise((resolve, reject) => {
         exec(`g++ ${__dirname + filePath} -o ${__dirname + filePath.replace('.cpp', '')}`, (error, stdout, stderr) => {
             if (error) {
@@ -25,4 +25,4 @@ async function executeCPP(problemId, filePath) {
 }
 
 
-module.exports = { executeCPP }
+module.exports = { runCPP }
