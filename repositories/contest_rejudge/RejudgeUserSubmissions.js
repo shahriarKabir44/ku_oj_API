@@ -45,6 +45,7 @@ class UserSubmissionReEvaluator {
                 judgeRepository.verdictType = data.type
                 judgeRepository.execTime = data.execTime
                 judgeRepository.verdict = data.verdict
+                judgeRepository.errorMessage = data.message
                 judgeRepository.setVerdict()
 
 

@@ -28,6 +28,7 @@ module.exports = class SubmissionRepository {
                 verdict,
                 language,
                 submissionFileURL,
+                errorMessage,
                 contestId,
                 problemId,
                 submittedBy, (
