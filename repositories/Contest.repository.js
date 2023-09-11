@@ -17,7 +17,6 @@ module.exports = class ContestRepository {
         })
         RedisClient.store(`contest_${contest.id}`, contest)
         setTimeout(() => {
-            console.log('herex')
             contest.status = 2
             executeSqlAsync({
                 sql: `update contest set status=2 where id=?;`,

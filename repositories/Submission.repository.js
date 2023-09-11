@@ -97,7 +97,6 @@ module.exports = class SubmissionRepository {
         })
     }
     static async getContestSubmissions({ contestId, pageNumber }) {
-
         return executeSqlAsync({
             sql: `select
                     id,
@@ -119,7 +118,7 @@ module.exports = class SubmissionRepository {
                     ) as author
                 from submission
                 where contestId = ?
-                order by time desc LIMIT ?,20;`,
+                order by time desc LIMIT ?,10;`,
             values: [contestId, pageNumber * 1]
         })
     }
