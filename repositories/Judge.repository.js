@@ -38,6 +38,7 @@ module.exports = class JudgeRepository {
         await this.getContestResult()
         let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
         this.verdictType = data.type
+        this.errorMessage = data.message
         this.execTime = data.execTime
         this.verdict = data.verdict
         this.setVerdict()
@@ -84,9 +85,9 @@ module.exports = class JudgeRepository {
         return Promise.all([
             this.calculateScore(),
             executeSqlAsync({
-                sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime', 'isOfficial'])}
+                sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime', 'isOfficial', 'errorMessage'])}
                  where id=?;`,
-                values: [this.verdict, this.execTime, this.isOfficial, this.submissionId]
+                values: [this.verdict, this.execTime, this.isOfficial, this.errorMessage, this.submissionId]
             })
         ])
 

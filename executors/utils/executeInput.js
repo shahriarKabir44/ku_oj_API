@@ -8,20 +8,20 @@ async function executeInput(processChild, args) {
     return new Promise((resolve, reject) => {
         try {
             let begin = new Date()
-            let messages = []
+            let errorMessage = ""
             processChild.stdin.write(args);
             let isExecutionCompleted = false
             processChild.stdin.end();
             processChild.stderr.on('data', e => {
                 let message = e.toString()
-                messages.push(message)
+                errorMessage += message
 
             })
             processChild.stderr.on('end', e => {
                 reject({
                     type: 3,
                     result: false,
-                    message: messages,
+                    message: errorMessage,
                     verdict: 'ERROR',
                     execTime: 'N/A'
 
