@@ -33,7 +33,6 @@ class RedisClient {
 
         } catch (error) {
 
-            console.log(key, value, error)
         }
         //  this.client.expire(key, 3600 * 2 * 1000, (err, data) => { })
     }

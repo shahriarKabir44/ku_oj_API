@@ -15,7 +15,8 @@ module.exports = class JudgeRepository {
         time,
         ext,
         verdictType,
-        execTime
+        execTime,
+        languageName
     }) {
         this.contestId = contestId
         this.userId = userId
@@ -31,10 +32,11 @@ module.exports = class JudgeRepository {
         this.path = `${this.submissionFileURL}`;
         this.execTime = execTime
         this.isNewContestSubmission = false
+        this.languageName = languageName
     }
     async judgeSubmission() {
         await this.getContestResult()
-        let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.ext })
+        let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
         this.verdictType = data.type
         this.execTime = data.execTime
         this.verdict = data.verdict
@@ -121,7 +123,6 @@ module.exports = class JudgeRepository {
                 values: [this.problemId]
             })
             RedisClient.store(query, problem).catch(e => {
-                console.log(e, "here")
             })
             return problem
         }

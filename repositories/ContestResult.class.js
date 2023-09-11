@@ -136,7 +136,6 @@ class ContestResult {
             position
 
         }).catch(e => {
-            console.log(e, "here")
         })
     }
 }

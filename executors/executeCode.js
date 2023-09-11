@@ -4,6 +4,7 @@ const { runPython } = require("./runPython")
 
 
 async function executeCode(submission) {
+    console.log(submission)
     if (submission.language == 'python') {
         return runPython(submission.problemId, submission.submissionFileURL)
     }

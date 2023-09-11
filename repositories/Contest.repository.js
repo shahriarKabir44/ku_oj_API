@@ -3,12 +3,11 @@ const { executeSqlAsync } = require('../utils/executeSqlAsync')
 
 const QueryBuilder = require('../utils/queryBuilder')
 const { ContestResult } = require('./ContestResult.class')
-const JudgeRepository = require('./Judge.repository')
 
 
 module.exports = class ContestRepository {
     static async beginContest(contest) {
-        if (contest.status != 1) return
+        if (contest.status == 1 || contest.status == 2) return
         if (contest.startTime > (new Date()) * 1) return
         let timeSpan = contest.endTime - contest.startTime
         contest.status = 1
@@ -18,12 +17,14 @@ module.exports = class ContestRepository {
         })
         RedisClient.store(`contest_${contest.id}`, contest)
         setTimeout(() => {
+            console.log('herex')
             contest.status = 2
             executeSqlAsync({
                 sql: `update contest set status=2 where id=?;`,
                 values: [contest.id]
             })
             RedisClient.store(`contest_${contest.id}`, contest)
+            this.setStandings(contest.id)
         }, timeSpan)
     }
     static async setStandings(contestId) {
