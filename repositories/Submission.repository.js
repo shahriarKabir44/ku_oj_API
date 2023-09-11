@@ -124,7 +124,6 @@ module.exports = class SubmissionRepository {
         })
     }
     static async getUserSubmissions({ userId, pageNumber }) {
-        console.log(userId)
         return executeSqlAsync({
             sql: `select
                     id,
@@ -147,7 +146,7 @@ module.exports = class SubmissionRepository {
                     ) as author
                 from submission
                 where submittedBy = ?
-                order by time desc LIMIT ?,20;`,
+                order by time desc LIMIT ?,10;`,
             values: [userId, pageNumber * 1]
         })
     }
