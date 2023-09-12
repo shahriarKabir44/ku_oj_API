@@ -1,6 +1,7 @@
 const JudgeRepository = require("../Judge.repository");
 const ContestRepository = require("../Contest.repository");
 const { executeCode } = require("../../executors/executeCode");
+const { executeSqlAsync } = require("../../utils/executeSqlAsync");
 
 
 async function rejudgeUserSubmissions({ submissions, problem, contestId, contestantId, contestResult }) {
@@ -19,7 +20,7 @@ class UserSubmissionReEvaluator {
         this.contestResult = _contestResult
     }
     async judgeSubmissions() {
-
+        this.numSolutions = 0
         let promises = []
 
         this.submissions.forEach((submission) => {
@@ -41,6 +42,7 @@ class UserSubmissionReEvaluator {
             promises.push((async () => {
                 let data = await executeCode(submission)
                 submission.verdict = data.verdict
+                if (data.verdict == 'AC') this.numSolutions++
                 submission.execTime = data.execTime
                 judgeRepository.verdictType = data.type
                 judgeRepository.execTime = data.execTime
@@ -52,7 +54,10 @@ class UserSubmissionReEvaluator {
             })())
 
         })
-
+        executeSqlAsync({
+            sql: `update problem set numSolutions=? where id=?;`,
+            values: [this.numSolutions, this.problem.id]
+        })
         await Promise.all(promises)
         await Promise.all([
             this.processOfficialSubmissions(this.submissions.filter(submission => submission.isOfficial)),

@@ -142,7 +142,7 @@ module.exports = class SubmissionRepository {
                         from contest
                         where
                             contest.id = submission.contestId
-                    ) as author
+                    ) as contestTitle
                 from submission
                 where submittedBy = ?
                 order by time desc LIMIT ?,10;`,

@@ -119,6 +119,11 @@ ContestRouter.get('/getParticipatedContestList/:userId/:pageNumber', (req, res) 
             res.send(participatedContestList)
         })
 })
-
+ContestRouter.get('/getProblems/:pageNumber', (req, res) => {
+    ContestRepository.getProblems(req.params)
+        .then(problems => {
+            res.send(problems)
+        })
+})
 
 module.exports = ContestRouter

@@ -8,29 +8,43 @@ const { ContestResult } = require('./ContestResult.class')
 module.exports = class ContestRepository {
     static async beginContest(contest) {
         if (contest.status == 1 || contest.status == 2) return
-        if (contest.startTime > (new Date()) * 1) return
+        if (contest.startTime >= (new Date()) * 1) return
         let timeSpan = contest.endTime - contest.startTime
         contest.status = 1
+        console.log(timeSpan)
         executeSqlAsync({
             sql: `update contest set status=1 where id=?;`,
             values: [contest.id]
         })
+
         RedisClient.store(`contest_${contest.id}`, contest)
         setTimeout(() => {
+
             contest.status = 2
             executeSqlAsync({
                 sql: `update contest set status=2 where id=?;`,
                 values: [contest.id]
             })
+            console.log(contest)
             RedisClient.store(`contest_${contest.id}`, contest)
             this.setStandings(contest.id)
         }, timeSpan)
+    }
+    static async getProblems({ pageNumber }) {
+        return executeSqlAsync({
+            sql: `select id,title,points,
+                (select title from contest where contest.id = problem.contestId) as contestTitle
+            from problem order by id desc limit ?,10;`,
+            values: [pageNumber * 1]
+
+        })
     }
     static async setStandings(contestId) {
         let contestResults = await executeSqlAsync({
             sql: `select * from contestResult where hasAttemptedOfficially=1 and contestId=? order by official_points desc ;`,
             values: [contestId]
         })
+        console.log(contestResults)
         contestResults.forEach((contestResult, index) => {
             contestResult.position = index + 1
             const { contestantId } = contestResult
@@ -253,6 +267,7 @@ module.exports = class ContestRepository {
             contestantId: userId,
             contestId: contest.id
         })
+        if (contestResult == null) return {}
         return {
             official: contestResult.officialVerdicts[problemId],
             unofficial: contestResult.verdicts[problemId]
