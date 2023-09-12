@@ -113,5 +113,12 @@ ContestRouter.post('/updateProblemInfo', (req, res) => {
         })
 })
 
+ContestRouter.get('/getParticipatedContestList/:userId/:pageNumber', (req, res) => {
+    ContestRepository.getParticipatedContestList(req.params)
+        .then(participatedContestList => {
+            res.send(participatedContestList)
+        })
+})
+
 
 module.exports = ContestRouter

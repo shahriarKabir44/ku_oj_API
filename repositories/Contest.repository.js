@@ -229,13 +229,19 @@ module.exports = class ContestRepository {
                         from
                             contest
                         where contest.id= contestId
-                    ) as participationTime
+                    ) as participationTime,
+                     (
+                        select title
+                        from
+                            contest
+                        where contest.id= contestId
+                    ) as contestTitle
                 from contestResult
                 where
                     hasAttemptedOfficially = 1
-                    and contestantId = 2
+                    and contestantId = ?
                 order by participationTime  desc
-                limit 0, 10;`,
+                limit ?, 10;`,
             values: [userId, pageNumber]
 
         })
