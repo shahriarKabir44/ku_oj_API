@@ -21,21 +21,20 @@ class ContestResult {
     }
     static async find({ contestId, contestantId }) {
         let redisQueryString = `contestResult_${contestId}_${contestantId}`
-        try {
-            return this.extractDataFromRedis(await RedisClient.queryCache(redisQueryString))
-        } catch (error) {
-            let _contestResult = this.extractDataFromDB(await executeSqlAsync({
-                sql: `select * from contestResult where contestId=? and contestantId=?;`,
-                values: [contestId, contestantId]
-            }))
-            if (_contestResult) {
-                _contestResult.storeInRedis()
-                return _contestResult
+        let contestResult = this.extractDataFromRedis(await RedisClient.queryCache(redisQueryString))
+        if (contestResult != null) return contestResult
 
-            }
-            else {
-                return null
-            }
+        let _contestResult = this.extractDataFromDB(await executeSqlAsync({
+            sql: `select * from contestResult where contestId=? and contestantId=?;`,
+            values: [contestId, contestantId]
+        }))
+        if (_contestResult != null) {
+            _contestResult.storeInRedis()
+            return _contestResult
+
+        }
+        else {
+            return null
         }
     }
     /**
@@ -43,6 +42,7 @@ class ContestResult {
      * @param {ContestResult} _contestResult 
      */
     static extractDataFromRedis(_contestResult) {
+        if (_contestResult == null) return
         let { contestId, contestantId } = _contestResult
         let contestResult = new ContestResult({ _contestantId: contestantId, _contestId: contestId })
         for (let key in _contestResult) {
@@ -63,7 +63,7 @@ class ContestResult {
         contestResult.description = (_contestResult.description) ? JSON.parse(_contestResult.description) : {}
         contestResult.official_description = (_contestResult.official_description) ? JSON.parse(_contestResult.official_description) : {}
         contestResult.official_points = _contestResult.official_points
-        contestResult.officialVerdicts = (_contestResult.officialVerdicts) ? JSON.parse(_contestResult.official_description) : {}
+        contestResult.officialVerdicts = (_contestResult.officialVerdicts) ? JSON.parse(_contestResult.officialVerdicts) : {}
         contestResult.verdicts = (_contestResult.verdicts) ? JSON.parse(_contestResult.verdicts) : {}
         contestResult.hasAttemptedOfficially = _contestResult.hasAttemptedOfficially
         contestResult.hasAttemptedUnofficially = _contestResult.hasAttemptedUnofficially

@@ -95,38 +95,33 @@ module.exports = class JudgeRepository {
 
     }
     async findContestById() {
-        try {
 
-            let contest = await RedisClient.queryCache(`contest_${this.contestId}`)
-            return contest
+        let _contest = await RedisClient.queryCache(`contest_${this.contestId}`)
+        if (_contest != null)
+            return _contest
 
-        } catch (error) {
 
-            let [contest] = await executeSqlAsync({
-                sql: `select * from contest where id=?;`,
-                values: [this.contestId]
-            })
-            RedisClient.store(`contest_${this.contestId}`, contest)
-            return contest
-        }
+        let [contest] = await executeSqlAsync({
+            sql: `select * from contest where id=?;`,
+            values: [this.contestId]
+        })
+        RedisClient.store(`contest_${this.contestId}`, contest)
+        return contest
     }
     async findProblemById() {
         let query = `problem_${this.problemId}`
-        try {
 
-            let contest = await RedisClient.queryCache(query)
-            return contest
+        let _problem = await RedisClient.queryCache(query)
 
-        } catch (error) {
+        if (_problem != null) return _problem
 
-            let [problem] = await executeSqlAsync({
-                sql: `select * from problem where id=?;`,
-                values: [this.problemId]
-            })
-            RedisClient.store(query, problem).catch(e => {
-            })
-            return problem
-        }
+        let [problem] = await executeSqlAsync({
+            sql: `select * from problem where id=?;`,
+            values: [this.problemId]
+        })
+        RedisClient.store(query, problem).catch(e => {
+        })
+        return problem
     }
     async setScoreWhenRejected() {
         this.updateContestResult()

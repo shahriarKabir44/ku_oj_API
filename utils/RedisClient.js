@@ -11,16 +11,11 @@ class RedisClient {
 
     }
     static async queryCache(key) {
-        return new Promise((resolve, reject) => {
-            this.client.get(key)
-                .then(data => {
-                    if (!data) reject(null)
-                    resolve(JSON.parse(data))
-                })
-                .catch(e => {
-                })
+        let data = await this.client.get(key)
 
-        })
+        if (data == null) return null
+        return (JSON.parse(data))
+
 
     }
     static async store(key, value) {
@@ -32,7 +27,7 @@ class RedisClient {
             })
 
         } catch (error) {
-
+            console.log('store', error, key, value)
         }
         //  this.client.expire(key, 3600 * 2 * 1000, (err, data) => { })
     }

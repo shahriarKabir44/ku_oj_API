@@ -23,14 +23,12 @@ module.exports = class UserRepository {
         }
     }
     static async findById({ id }) {
-        let user = null
-        try {
-            user = await RedisClient.queryCache(`user_${id}`)
-        } catch (error) {
-            let [userInfo] = await executeSqlAsync({ sql: `select user from userName,id where id=?`, values: [id] })
-            user = userInfo
-            RedisClient.store(`user_${id}`)
-        }
+        let _user = await RedisClient.queryCache(`user_${id}`)
+        if (_user != null) return _user
+        let [userInfo] = await executeSqlAsync({ sql: `select user from userName,id where id=?`, values: [id] })
+
+        RedisClient.store(`user_${id}`, userInfo)
+        return userInfo
     }
     static async authenticate({ userName, password }) {
         let [user] = await executeSqlAsync({
