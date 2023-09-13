@@ -126,4 +126,20 @@ ContestRouter.get('/getProblems/:pageNumber', (req, res) => {
         })
 })
 
+
+ContestRouter.post('/saveMessageToContestThread', (req, res) => {
+    ContestRepository.saveMessageToContestThread(req.body)
+        .then(() => {
+            res.send({ data: 1 })
+        })
+})
+
+ContestRouter.get('/getContestMessages/:contestId', (req, res) => {
+    ContestRepository.getContestMessages(req.params)
+        .then(messages => {
+            res.send(messages)
+        })
+})
+
+
 module.exports = ContestRouter

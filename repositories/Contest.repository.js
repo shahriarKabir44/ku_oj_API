@@ -32,9 +32,9 @@ module.exports = class ContestRepository {
     }
     static async getProblems({ pageNumber }) {
         return executeSqlAsync({
-            sql: `select id,title,points,
+            sql: `select id,title,points,numSolutions,
                 (select title from contest where contest.id = problem.contestId) as contestTitle
-            from problem order by id desc limit ?,10;`,
+            from problem order by id desc limit ?,20;`,
             values: [pageNumber * 1]
 
         })
@@ -77,6 +77,21 @@ module.exports = class ContestRepository {
         RedisClient.store(`problem_${problemId}_contest`, contest)
         return contest
 
+    }
+    static async saveMessageToContestThread({ contestId, senderId, senderName, message }) {
+        return executeSqlAsync({
+            sql: QueryBuilder.insertQuery(
+                'contestMessage',
+                ['contestId', 'senderId', 'senderName', 'message']
+            ),
+            values: [contestId, senderId, senderName, message]
+        })
+    }
+    static async getContestMessages({ contestId }) {
+        return executeSqlAsync({
+            sql: `select * from contestMessage where contestId=? oder by time desc;`,
+            values: [contestId]
+        })
     }
     static async getContests() {
         return executeSqlAsync({
