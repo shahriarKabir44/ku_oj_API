@@ -11,7 +11,6 @@ module.exports = class ContestRepository {
         if (contest.startTime >= (new Date()) * 1) return
         let timeSpan = contest.endTime - contest.startTime
         contest.status = 1
-        console.log(timeSpan)
         executeSqlAsync({
             sql: `update contest set status=1 where id=?;`,
             values: [contest.id]
@@ -25,7 +24,6 @@ module.exports = class ContestRepository {
                 sql: `update contest set status=2 where id=?;`,
                 values: [contest.id]
             })
-            console.log(contest)
             RedisClient.store(`contest_${contest.id}`, contest)
             this.setStandings(contest.id)
         }, timeSpan)
@@ -44,7 +42,6 @@ module.exports = class ContestRepository {
             sql: `select * from contestResult where hasAttemptedOfficially=1 and contestId=? order by official_points desc ;`,
             values: [contestId]
         })
-        console.log(contestResults)
         contestResults.forEach((contestResult, index) => {
             contestResult.position = index + 1
             const { contestantId } = contestResult
@@ -78,18 +75,18 @@ module.exports = class ContestRepository {
         return contest
 
     }
-    static async saveMessageToContestThread({ contestId, senderId, senderName, message }) {
+    static async saveMessageToContestThread({ contestId, senderId, senderName, message, time }) {
         return executeSqlAsync({
             sql: QueryBuilder.insertQuery(
                 'contestMessage',
-                ['contestId', 'senderId', 'senderName', 'message']
+                ['contestId', 'senderId', 'senderName', 'message', 'time']
             ),
-            values: [contestId, senderId, senderName, message]
+            values: [contestId, senderId, senderName, message, time]
         })
     }
     static async getContestMessages({ contestId }) {
         return executeSqlAsync({
-            sql: `select * from contestMessage where contestId=? oder by time desc;`,
+            sql: `select * from contestMessage where contestId=? order by time ;`,
             values: [contestId]
         })
     }
