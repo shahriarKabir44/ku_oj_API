@@ -82,7 +82,7 @@ module.exports = class ContestRepository {
         return executeSqlAsync({
             sql: `SELECT id,startTime,endTime,title,hostId, 
                 (select userName from user WHERE user.id=hostId) 
-                as hostName from contest;`,
+                as hostName from contest order by startTime desc;`,
             values: []
         })
     }
@@ -92,8 +92,8 @@ module.exports = class ContestRepository {
         return executeSqlAsync({
             sql: `SELECT id,startTime,endTime,title,hostId, 
                 (select userName from user WHERE user.id=hostId) 
-                as hostName from contest where contest.startTime>=?;`,
-            values: [time]
+                as hostName from contest where contest.startTime>=? or (contest.startTime<=? and contest.endTime>=?) order by contest.startTime;`,
+            values: [time, time, time]
         })
     }
     static async findProblemById(id) {
@@ -124,16 +124,21 @@ module.exports = class ContestRepository {
         })
     }
     static async createContest({ title, startTime, endTime, hostId, code }) {
-        await executeSqlAsync({
-            sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code']),
-            values: [title, startTime, endTime, hostId, code]
-        })
-        let [{ contestId }] = await executeSqlAsync({
-            sql: `select max(id) as contestId from contest where 
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code']),
+                values: [title, startTime, endTime, hostId, code]
+            })
+            let [{ contestId }] = await executeSqlAsync({
+                sql: `select max(id) as contestId from contest where 
                 hostId=?  ;`,
-            values: [hostId]
-        })
-        return contestId
+                values: [hostId]
+            })
+            return contestId
+        } catch (error) {
+            return null
+        }
+
     }
     static async createProblem({ contestId, title, points, code, createdOn }) {
         await executeSqlAsync({
