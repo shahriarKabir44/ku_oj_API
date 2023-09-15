@@ -271,6 +271,7 @@ module.exports = class ContestRepository {
                 where
                     hasAttemptedOfficially = 1
                     and contestantId = ?
+                    and status=2
                 order by participationTime  desc
                 limit ?, 10;`,
             values: [userId, pageNumber * 1]
