@@ -9,7 +9,7 @@ module.exports = class ContestRepository {
     static async beginContest(contest) {
         if (contest.status == 1 || contest.status == 2) return
         if (contest.startTime >= (new Date()) * 1) return
-        let timeSpan = contest.endTime - contest.startTime
+        let timeSpan = (new Date()) * 1 - contest.startTime
         contest.status = 1
         executeSqlAsync({
             sql: `update contest set status=1 where id=?;`,

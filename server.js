@@ -3,8 +3,11 @@ const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
 const { initConnection } = require('./utils/dbConnection');
 const { RedisClient } = require('./utils/RedisClient');
+const http = require('http');
 const { executeSqlAsync } = require('./utils/executeSqlAsync');
+const WebSocket = require('ws')
 const workers = []
+
 const clients = new Map()
 require('dotenv').config({ path: `${__dirname}/.env.dev` })
 
@@ -19,7 +22,7 @@ if (cluster.isMaster) {
 
 
     cluster.on('message', (worker, message, handle) => {
-        const { messageType, client } = message
+        console.log('mesaged', message)
 
     })
     cluster.on('exit', (worker, code, signal) => {
@@ -32,11 +35,16 @@ if (cluster.isMaster) {
 }
 
 function startExpress() {
+
     const app = express()
+    const server = http.createServer(app);
+    const wss = new WebSocket.Server({ server });
 
     initConnection(process.env)
     RedisClient.init()
-    app.listen(8080)
+    const PORT = process.env.PORT || 8080;
+    server.listen(PORT, () => {
+    });
     app.use(require('cors')({
         origin: '*'
     }))
@@ -56,5 +64,19 @@ function startExpress() {
 
         })
     })
+    wss.on('connection', (ws) => {
+        ws.on('message', (message) => {
+            wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+
+                    client.send(message.toString());
+                }
+            });
+        });
+
+        // Handle WebSocket disconnections
+        ws.on('close', () => {
+        });
+    });
 }
 
