@@ -2,6 +2,6 @@
 /executors/submissions/*
 /executors/testcases/*
 
-
+/migrations/logs.txt
 /problemStatements/*
 .env.dev
