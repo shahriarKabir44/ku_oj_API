@@ -11,7 +11,7 @@ KU_OJ is an online judge platform for Khulna University students and faculty, wh
 - **Problem creation and management**: Users can create problems with custom test cases, input/output formats, constraints, and tags. Users can also edit, delete, or clone existing problems.
 - **Problem solving and submission**: Users can solve problems outside of contests and submit code for them. Users can view the status, verdict, and score of their submissions, as well as the problem statistics and the submissions of other users.
 - **Real-time communication**: Users can chat with other users during contests using WebSocket. Users can also send and receive private messages to and from other users.
-- **User profile and settings**: Users can view and edit their profile information, such as username, email, password, avatar, bio, and preferences. Users can also view their activity, achievements, and ratings.
+
 
 ## Technologies
 
