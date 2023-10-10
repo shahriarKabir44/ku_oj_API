@@ -7,9 +7,13 @@ const http = require('http');
 const { executeSqlAsync } = require('./utils/executeSqlAsync');
 const WebSocket = require('ws')
 const workers = []
+const commands = process.argv.filter((item, index) => index > 1)
+process.env.mode = commands[0]
+if (process.env.mode == 'dev') {
+    require('dotenv').config({ path: `${__dirname}/.env.dev` })
 
-const clients = new Map()
-require('dotenv').config({ path: `${__dirname}/.env.prod` })
+} else
+    require('dotenv').config({ path: `${__dirname}/.env.prod` })
 
 if (cluster.isMaster) {
 
