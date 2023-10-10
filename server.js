@@ -57,7 +57,7 @@ function startExpress() {
     app.use('/user', require('./routers/User.router'))
     app.get('/test', (req, res) => {
         executeSqlAsync({
-            sql: `select * from submission;`,
+            sql: `select * from user;`,
             values: []
         }).then(data => {
             res.send(data)
