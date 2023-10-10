@@ -8,7 +8,8 @@ function initConnection(env) {
         user: env.dbUser,
         password: env.dbPassword,
         database: env.dbName,
-        port: 3306
+        port: env.dbPort,
+        ssl: env.dbssl ? JSON.parse(env.dbssl) : null
     })
 }
 

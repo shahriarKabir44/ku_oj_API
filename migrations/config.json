@@ -1,5 +1,11 @@
-{"dbPassword":"Abcd1234.",
-"dbPort":"3306",
-"dbName":"ku_oj",
-"dbUser":"root",
-"dbHost":"localhost"}
+{
+    "dbPassword": "r2xusM9WL35w0vs8",
+    "dbPort": "4000",
+    "dbName": "ku_oj",
+    "dbUser": "2sEH7B6qQvyTTjA.root",
+    "dbHost": "gateway01.us-west-2.prod.aws.tidbcloud.com",
+    "ssl": {
+        "minVersion": "TLSv1.2",
+        "rejectUnauthorized": true
+    }
+}

@@ -1,7 +1,9 @@
 /node_modules
 /executors/submissions/*
 /executors/testcases/*
-
+/migrations/config.json
 /migrations/logs.txt
 /problemStatements/*
 .env.dev
+.env.prod
+migrations/config.json

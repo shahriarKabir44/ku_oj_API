@@ -9,7 +9,7 @@ const WebSocket = require('ws')
 const workers = []
 
 const clients = new Map()
-require('dotenv').config({ path: `${__dirname}/.env.dev` })
+require('dotenv').config({ path: `${__dirname}/.env.prod` })
 
 if (cluster.isMaster) {
 
