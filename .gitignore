@@ -6,4 +6,4 @@
 /problemStatements/*
 .env.dev
 .env.prod
-migrations/config.json
+
