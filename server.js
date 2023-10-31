@@ -41,14 +41,11 @@ if (cluster.isMaster) {
 function startExpress() {
 
     const app = express()
-    const server = http.createServer(app);
-    const wss = new WebSocket.Server({ server });
 
     initConnection(process.env)
     RedisClient.init()
     const PORT = process.env.PORT || 8080;
-    server.listen(PORT, () => {
-    });
+    app.listen(PORT)
     app.use(require('cors')({
         origin: '*'
     }))
@@ -68,19 +65,6 @@ function startExpress() {
 
         })
     })
-    wss.on('connection', (ws) => {
-        ws.on('message', (message) => {
-            wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
 
-                    client.send(message.toString());
-                }
-            });
-        });
-
-        // Handle WebSocket disconnections
-        ws.on('close', () => {
-        });
-    });
 }
 
