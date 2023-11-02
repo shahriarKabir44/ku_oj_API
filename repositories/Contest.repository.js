@@ -163,22 +163,11 @@ module.exports = class ContestRepository {
             values: [contestId]
         })
 
-        this.setProblemFilesURL({
-            problemId: newId,
-            outputFileURL: `/testcases/${newId}/out.txt`,
-            testcaseFileURL: `/testcases/${newId}/in.txt`,
-            statementFileURL: `/${newId}.pdf`
-        })
+
 
         return newId
     }
-    static async setProblemFilesURL({ problemId, outputFileURL, testcaseFileURL, statementFileURL }) {
-        return executeSqlAsync({
-            sql: `update problem set statementFileURL=?, testcaseFileURL=?, outputFileURL=?
-                where id=?;`,
-            values: [statementFileURL, testcaseFileURL, outputFileURL, problemId]
-        })
-    }
+
 
     static async searchContestByProblem({ problemId }) {
 
