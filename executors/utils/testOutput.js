@@ -13,7 +13,7 @@ async function testOutput(processChild, problemId) {
             .then(data => testInputs = data),
 
         getFiles(`/testcases/${problemId}/out.txt`)
-            .then(data => expectedOutputs = data)
+            .then(data => expectedOutputs = data.split("\n"))
 
     ])
     let outputs = []
