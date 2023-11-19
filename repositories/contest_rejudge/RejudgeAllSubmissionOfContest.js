@@ -23,7 +23,10 @@ async function rejudgeAllSubmissionOfContest({ contestId }) {
         _promises.push((async () => {
 
             let promises = []
-
+            contestResult.official_description = {}
+            contestResult.description = {}
+            contestResult.officialVerdicts = {}
+            contestResult.verdicts = {}
             problems.forEach(problem => {
                 promises.push(rejudgeProblemsSubmissions({ problem, contestId, contestResult }))
             })

@@ -9,7 +9,7 @@ module.exports = class ContestRepository {
     static async beginContest(contest) {
         if (contest.status == 1 || contest.status == 2) return
         if (contest.startTime >= (new Date()) * 1) return
-        let timeSpan = (new Date()) * 1 - contest.startTime
+        let timeSpan = contest.endTime - (new Date()) * 1
         contest.status = 1
         executeSqlAsync({
             sql: `update contest set status=1 where id=?;`,
@@ -138,8 +138,8 @@ module.exports = class ContestRepository {
     static async createContest({ title, startTime, endTime, hostId, code }) {
         try {
             await executeSqlAsync({
-                sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code']),
-                values: [title, startTime, endTime, hostId, code]
+                sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code', 'status']),
+                values: [title, startTime, endTime, hostId, code, 0]
             })
             let [{ contestId }] = await executeSqlAsync({
                 sql: `select max(id) as contestId from contest where 
@@ -148,6 +148,7 @@ module.exports = class ContestRepository {
             })
             return contestId
         } catch (error) {
+            console.log(error)
             return null
         }
 
