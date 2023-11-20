@@ -18,6 +18,7 @@ async function executeInput(processChild, args) {
 
             })
             processChild.stderr.on('end', e => {
+
                 reject({
                     type: 3,
                     result: false,

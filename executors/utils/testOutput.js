@@ -52,7 +52,6 @@ async function testOutput(processChild, problemId) {
                 })
             })
             .catch(err => {
-
                 reject(err)
             })
     })
