@@ -23,7 +23,8 @@ class UserSubmissionReEvaluator {
         this.numSolutions = 0
         let promises = []
 
-        this.submissions.forEach((submission) => {
+        for (let n = 0; n < this.submissions.length; n++) {
+            let submission = this.submissions[n]
             if (submission.isOfficial) {
                 this.contestResult.hasAttemptedOfficially = 1
             }
@@ -39,26 +40,20 @@ class UserSubmissionReEvaluator {
             })
             judgeRepository.contestResult = this.contestResult
             judgeRepository.time = submission.time
-            promises.push((async () => {
-                let data = await executeCode(submission)
-                submission.verdict = data.verdict
-                if (data.verdict == 'AC') this.numSolutions++
-                submission.execTime = data.execTime
-                judgeRepository.verdictType = data.type
-                judgeRepository.execTime = data.execTime
-                judgeRepository.verdict = data.verdict
-                judgeRepository.errorMessage = data.message
-                judgeRepository.setVerdict()
-
-
-            })())
-
-        })
+            let data = await executeCode(submission)
+            submission.verdict = data.verdict
+            if (data.verdict == 'AC') this.numSolutions++
+            submission.execTime = data.execTime
+            judgeRepository.verdictType = data.type
+            judgeRepository.execTime = data.execTime
+            judgeRepository.verdict = data.verdict
+            judgeRepository.errorMessage = data.message
+            await judgeRepository.setVerdict()
+        }
         executeSqlAsync({
             sql: `update problem set numSolutions=? where id=?;`,
             values: [this.numSolutions, this.problem.id]
         })
-        await Promise.all(promises)
         await Promise.all([
             this.processOfficialSubmissions(this.submissions.filter(submission => submission.isOfficial)),
             this.processUnofficialSubmissions(this.submissions.filter(submission => !submission.isOfficial))

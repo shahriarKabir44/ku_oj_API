@@ -1,9 +1,9 @@
 const { Table } = require('migratify/templates/Migration.class')
 
 let newTable = new Table("problem")
-newTable.removeProperty('testcaseFileURL')
-newTable.removeProperty('statementFileURL')
-newTable.removeProperty('outputFileURL')
+newTable.dropColumn('testcaseFileURL')
+newTable.dropColumn('statementFileURL')
+newTable.dropColumn('outputFileURL')
 
 module.exports = async () => {
     newTable.update()
