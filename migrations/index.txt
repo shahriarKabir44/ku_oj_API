@@ -1,7 +1,6 @@
-1695289416226create-table_user.js
-1695289416227create-table_contest.js
-1695289416227create-table_contestMessage.js
-1695289416227create-table_contestResult.js
-1695289416227create-table_problem.js
-1695289416228create-table_submission.js
-1698942577363update-table_problem.js
+1701459745731create-table_user.js
+1701459745732create-table_contest.js
+1701459745732create-table_contestMessage.js
+1701459745733create-table_contestResult.js
+1701459745733create-table_problem.js
+1701459745733create-table_submission.js

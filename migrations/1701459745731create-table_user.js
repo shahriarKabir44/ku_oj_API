@@ -2,7 +2,7 @@ const {Table} = require('migratify/templates/Migration.class')
 let newTable = new Table("user");
 newTable.setID('id');
 newTable.addColumn('userName','VARCHAR(255)')
-	.setNullable(false)
+	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(true)
 newTable.addColumn('password','VARCHAR(255)')

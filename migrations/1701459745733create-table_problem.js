@@ -1,29 +1,32 @@
 const {Table} = require('migratify/templates/Migration.class')
-let newTable = new Table("contestMessage");
+let newTable = new Table("problem");
+newTable.setID('id');
+newTable.addColumn('title','VARCHAR(255)')
+	.setNullable(true)
+	 .setDefaultValue('')
+	 .setUnique(false)
 newTable.addColumn('contestId','INT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
-newTable.addColumn('senderId','INT')
+newTable.addColumn('points','INT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
-newTable.addColumn('senderName','VARCHAR(20)')
+newTable.addColumn('numSolutions','INT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
-newTable.addColumn('message','TEXT(65536)')
+newTable.addColumn('code','VARCHAR(255)')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
-newTable.addColumn('time','VARCHAR(20)')
+newTable.addColumn('createdOn','MEDIUMTEXT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
 newTable.addForeignKey('contestId','contest','id');
-newTable.addForeignKey('senderId','user','id');
 newTable.addForeignKey('contestId','contest','id');
-newTable.addForeignKey('senderId','user','id');
 module.exports = async () => {
 	newTable.create()
 }
