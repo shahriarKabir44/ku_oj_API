@@ -15,7 +15,11 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
+<<<<<<< HEAD
     "migratify": "^1.0.20",
+=======
+    "migratify": "^1.0.18",
+>>>>>>> 965c3bc15a1a87877258ad4f7f5b5124959b3c24
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.1.2",
     "redis": "^4.6.7",

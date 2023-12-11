@@ -5,6 +5,7 @@ async function runJava(problemId, filePath) {
         let tempPath = `${__dirname + filePath}`
         let compileProcess = spawn('javac', [tempPath])
         compileProcess.on('error', (error) => {
+            console.log(error.toString())
             resolve({
                 type: 3,
                 result: false,
@@ -21,7 +22,7 @@ async function runJava(problemId, filePath) {
                     resolve(data)
                 })
                 .catch(err => {
-
+                    if (err.message) err.message = err.message.replace(new RegExp(tempPath, 'g'), '***.java')
                     resolve(err)
                 })
 

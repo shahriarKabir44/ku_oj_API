@@ -15,16 +15,18 @@ async function rejudgeAllSubmissionOfContest({ contestId }) {
         sql: `select * from contestResult where contestId=?`,
         values: [contestId]
     })
-    let contestResults = _contestResults.map(({ contestId, contestantId }) => new ContestResult({
-        _contestId: contestId,
-        _contestantId: contestantId
-    }))
+    let contestResults = _contestResults.map(contestResult => {
+        return ContestResult.extractDataFromDB([contestResult])
+    })
     let _promises = []
     contestResults.forEach(contestResult => {
         _promises.push((async () => {
 
             let promises = []
-
+            contestResult.official_description = {}
+            contestResult.description = {}
+            contestResult.officialVerdicts = {}
+            contestResult.verdicts = {}
             problems.forEach(problem => {
                 promises.push(rejudgeProblemsSubmissions({ problem, contestId, contestResult }))
             })

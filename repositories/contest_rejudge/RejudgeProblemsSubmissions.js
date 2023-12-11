@@ -5,9 +5,8 @@ const { rejudgeUserSubmissions } = require("./RejudgeUserSubmissions")
 
 async function rejudgeProblemsSubmissions({ problem, contestId, contestResult }) {
     let submissions = await executeSqlAsync({
-        sql: `select * from submission where submission.problemId=? 
-            order by submittedBy desc;`,
-        values: [problem.id]
+        sql: `select * from submission where submission.problemId=?  and submittedBy=?;`,
+        values: [problem.id, contestResult.contestantId]
     })
     if (!submissions.length) {
         return null

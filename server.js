@@ -25,10 +25,6 @@ if (cluster.isMaster) {
     }
 
 
-    cluster.on('message', (worker, message, handle) => {
-        console.log('mesaged', message)
-
-    })
     cluster.on('exit', (worker, code, signal) => {
         cluster.fork();
     });

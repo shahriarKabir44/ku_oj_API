@@ -140,6 +140,12 @@ ContestRouter.get('/getContestMessages/:contestId', (req, res) => {
             res.send(messages)
         })
 })
+ContestRouter.get('/setStandings/:contestId', (req, res) => {
+    ContestRepository.setStandings(req.params.contestId)
+        .then(() => {
+            res.send({ data: 1 })
 
+        })
+})
 
 module.exports = ContestRouter
