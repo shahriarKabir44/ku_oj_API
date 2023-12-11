@@ -12,7 +12,7 @@ newTable.addColumn('senderName','VARCHAR(20)')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
-newTable.addColumn('message','TEXT(65536)')
+newTable.addColumn('message','MEDIUMTEXT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
@@ -25,5 +25,5 @@ newTable.addForeignKey('senderId','user','id');
 newTable.addForeignKey('contestId','contest','id');
 newTable.addForeignKey('senderId','user','id');
 module.exports = async () => {
-	newTable.create()
+	return newTable.create()
 }

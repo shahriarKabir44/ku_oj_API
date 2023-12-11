@@ -2,7 +2,7 @@ const {Table} = require('migratify/templates/Migration.class')
 let newTable = new Table("contest");
 newTable.setID('id');
 newTable.addColumn('title','VARCHAR(255)')
-	.setNullable(false)
+	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(true)
 newTable.addColumn('startTime','DOUBLE')
@@ -28,5 +28,5 @@ newTable.addColumn('status','INT')
 newTable.addForeignKey('hostId','user','id');
 newTable.addForeignKey('hostId','user','id');
 module.exports = async () => {
-	newTable.create()
+	return newTable.create()
 }
