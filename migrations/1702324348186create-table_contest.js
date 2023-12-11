@@ -26,6 +26,7 @@ newTable.addColumn('status','INT')
 	 .setDefaultValue('')
 	 .setUnique(false)
 newTable.addForeignKey('hostId','user','id');
+newTable.addForeignKey('hostId','user','id');
 module.exports = async () => {
 	return newTable.create()
 }
