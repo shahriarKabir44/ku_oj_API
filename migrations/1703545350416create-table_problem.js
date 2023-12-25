@@ -1,19 +1,7 @@
 const {Table} = require('migratify/templates/Migration.class')
 let newTable = new Table("problem");
 newTable.setID('id');
-newTable.addColumn('statementFileURL','MEDIUMTEXT')
-	.setNullable(true)
-	 .setDefaultValue('')
-	 .setUnique(false)
 newTable.addColumn('title','VARCHAR(255)')
-	.setNullable(true)
-	 .setDefaultValue('')
-	 .setUnique(false)
-newTable.addColumn('testcaseFileURL','MEDIUMTEXT')
-	.setNullable(true)
-	 .setDefaultValue('')
-	 .setUnique(false)
-newTable.addColumn('outputFileURL','MEDIUMTEXT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
@@ -37,7 +25,6 @@ newTable.addColumn('createdOn','MEDIUMTEXT')
 	.setNullable(true)
 	 .setDefaultValue('')
 	 .setUnique(false)
-newTable.addForeignKey('contestId','contest','id');
 newTable.addForeignKey('contestId','contest','id');
 module.exports = async () => {
 	return newTable.create()

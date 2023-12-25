@@ -9,7 +9,13 @@ class RedisClient {
                 host: process.env.redisHost,
                 port: process.env.redisPort
             }
-        }) : redis.createClient()
+        }) : redis.createClient({
+
+            socket: {
+                host: process.env.redisHost,
+                port: process.env.redisPort
+            }
+        })
         this.client = client
 
         this.client.connect()

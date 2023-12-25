@@ -54,8 +54,6 @@ newTable.addColumn('position','INT')
 	 .setUnique(false)
 newTable.addForeignKey('contestId','contest','id');
 newTable.addForeignKey('contestantId','user','id');
-newTable.addForeignKey('contestId','contest','id');
-newTable.addForeignKey('contestantId','user','id');
 module.exports = async () => {
 	return newTable.create()
 }

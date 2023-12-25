@@ -22,8 +22,6 @@ newTable.addColumn('time','VARCHAR(20)')
 	 .setUnique(false)
 newTable.addForeignKey('contestId','contest','id');
 newTable.addForeignKey('senderId','user','id');
-newTable.addForeignKey('contestId','contest','id');
-newTable.addForeignKey('senderId','user','id');
 module.exports = async () => {
 	return newTable.create()
 }

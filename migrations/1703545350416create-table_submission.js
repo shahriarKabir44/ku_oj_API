@@ -44,9 +44,6 @@ newTable.addColumn('isOfficial','INT')
 newTable.addForeignKey('problemId','problem','id');
 newTable.addForeignKey('submittedBy','user','id');
 newTable.addForeignKey('contestId','contest','id');
-newTable.addForeignKey('problemId','problem','id');
-newTable.addForeignKey('submittedBy','user','id');
-newTable.addForeignKey('contestId','contest','id');
 module.exports = async () => {
 	return newTable.create()
 }

@@ -12,7 +12,7 @@ process.env.mode = commands[0]
 if (process.env.mode == 'dev') {
     require('dotenv').config({ path: `${__dirname}/.env.dev` })
 
-} else
+} else if (process.env.mode == 'prod')
     require('dotenv').config({ path: `${__dirname}/.env.prod` })
 
 if (cluster.isMaster) {
