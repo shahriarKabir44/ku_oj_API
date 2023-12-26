@@ -50,8 +50,10 @@ services:
       - redisHost=ku_oj_redis
       - redisPort=6379
     depends_on:
-      - ku_oj_db
-      - ku_oj_redis
+      ku_oj_db:
+        condition: service_started
+      ku_oj_redis:
+        condition: service_started
 
   ku_oj_ws:
     image: shahriarkabir/ku_oj_ws:latest
