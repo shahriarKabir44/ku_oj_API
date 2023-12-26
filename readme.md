@@ -1,5 +1,4 @@
 
-
 # KU_OJ_API: An Online Judge Platform Backend for Khulna University
 
 KU_OJ is an online judge platform for Khulna University students and faculty, where they can create and participate in programming contests and submit code using C/C++, Java and Python. KU_OJ is inspired by Codeforces, a popular online judge for competitive programming.
@@ -12,19 +11,28 @@ KU_OJ is an online judge platform for Khulna University students and faculty, wh
 - **Problem solving and submission**: Users can solve problems outside of contests and submit code for them. Users can view the status, verdict, and score of their submissions, as well as the problem statistics and the submissions of other users.
 - **Real-time communication**: Users can chat with other users during contests using WebSocket. Users can also send and receive private messages to and from other users.
 
-
 ## Technologies
 
 - **Backend**: KU_OJ uses Express.js, a fast and minimalist web framework for Node.js, to handle the server-side logic and routing.
-- **Caching**: KU_OJ also uses Redis, an in-memory data structure store, to cache frequently accessed data and improve performance. 
-- **Database**: KU_OJ uses MySQL, a relational database management system, to store the persistent data, such as users, contests, problems, and submissions. 
-- **Migrations**: KU_OJ uses Migratify, an NPM package developed by the author, to manage the database migrations and schema changes (https://www.npmjs.com/package/migratify).
+- **Caching**: KU_OJ also uses Redis, an in-memory data structure store, to cache frequently accessed data and improve performance.
+- **Database**: KU_OJ uses MySQL, a relational database management system, to store the persistent data, such as users, contests, problems, and submissions.
+- **Migrations**: KU_OJ uses Migratify, an NPM package developed by the author, to manage the database migrations and schema changes (<https://www.npmjs.com/package/migratify>).
 - **Performance optimization**: KU_OJ uses Node.js multicoring for load balancing and concurrency.
- 
+
+## How to run it locally using docker
+
+- Clone this repository.
+
+- Open terminal in the directory of the docker-compose.yml. You might want to keep an eye on the different numeric values of the healthcheck properties of both MySQL and Redis services.
+- Run the project
+
+```bash
+sudo docker-compose up
+```
 
 ## Installation
 
-To install KU_OJ, you need to have Node.js, Redis, and MySQL installed on your system. You also need to clone this repository and install the dependencies using the following commands:
+To run this project, you need to have Node.js, Redis, and MySQL installed on your system. You also need to clone this repository and install the dependencies using the following commands:
 
 ```bash
 git clone https://github.com/shahriarKabir44/ku_oj_API.git
@@ -56,4 +64,3 @@ To start the main server, use the following command:
 ```bash
 npm start
 ```
- 
