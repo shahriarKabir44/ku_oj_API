@@ -18,10 +18,10 @@ RUN apt-get update  -y && \
     apt-get upgrade  -y 
 
 
-RUN curl -O https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz && \
-    tar -xvf openjdk-11.0.2_linux-x64_bin.tar.gz && \
-    mv jdk-11.0.2/* /usr/bin/ && \
-    rm openjdk-11.0.2_linux-x64_bin.tar.gz
+# RUN curl -O https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz && \
+#     tar -xvf openjdk-11.0.2_linux-x64_bin.tar.gz && \
+#     mv jdk-11.0.2/* /usr/bin/ && \
+#     rm openjdk-11.0.2_linux-x64_bin.tar.gz
 
 
 
