@@ -8,12 +8,15 @@ const { executeSqlAsync } = require('./utils/executeSqlAsync');
 const WebSocket = require('ws')
 const workers = []
 const commands = process.argv.filter((item, index) => index > 1)
-process.env.mode = commands[0]
-if (process.env.mode == 'dev') {
-    require('dotenv').config({ path: `${__dirname}/.env.dev` })
+if (commands) {
+    process.env.mode = commands[0]
+    if (process.env.mode == 'dev') {
+        require('dotenv').config({ path: `${__dirname}/.env.dev` })
 
-} else if (process.env.mode == 'prod')
-    require('dotenv').config({ path: `${__dirname}/.env.prod` })
+    } else if (process.env.mode == 'prod')
+        require('dotenv').config({ path: `${__dirname}/.env.prod` })
+
+}
 
 if (cluster.isMaster) {
 

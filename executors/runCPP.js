@@ -5,7 +5,7 @@ async function runCPP(problemId, filePath) {
     return new Promise((resolve, reject) => {
         let dir = (__dirname + filePath).replace('.cpp', '')
 
-        exec(`g++ ${dir}.cpp -o ${dir}`, (error, stdout, stderr) => {
+        exec(`/usr/bin/g++ ${dir}.cpp -o ${dir}`, (error, stdout, stderr) => {
             if (error) {
                 resolve({
                     type: 3,

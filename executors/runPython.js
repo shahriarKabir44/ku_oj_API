@@ -4,7 +4,7 @@ const { testOutput } = require("./utils/testOutput");
 
 
 async function runPython(problemId, filePath) {
-    const child = spawn("python", [__dirname + filePath]);
+    const child = spawn("/usr/bin/python3", [__dirname + filePath]);
     child.on('error', (e) => {
     })
     try {
