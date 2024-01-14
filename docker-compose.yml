@@ -32,7 +32,8 @@ services:
       timeout: 300s
       retries: 1000
       start_period: 30s
-
+    ports:
+      - "5000:6379"
     volumes:
       - cache:/data
   ku_oj_api:
