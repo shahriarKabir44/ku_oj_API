@@ -1,0 +1,13 @@
+authtoken: 2A5T7GPcAQC9EshYYiOrzJmAV6c_7rdUqypQ8o8iD3o7AegQG
+version: 1 
+tunnels:
+  frontend:
+    addr: 3000
+    proto: http
+  api:
+    addr: 8080
+    proto: http
+  ws:
+    addr: 8081
+    proto: http
+

@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js dev",
-    "start": "node server.js prod"
+    "start": "node server.js prod",
+    "ngrok": "ngrok start --config=./ngrok.config.yml --all"
   },
   "keywords": [],
   "author": "",
