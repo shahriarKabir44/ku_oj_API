@@ -4,8 +4,8 @@ async function runJava(problemId, filePath) {
     return new Promise((resolve, reject) => {
         let tempPath = `${__dirname + filePath}`
         let compileProcess = spawn('javac', [tempPath])
-        compileProcess.on('error', (error) => {
-            console.log(error.toString())
+
+        compileProcess.stderr.on('data', (error) => {
             resolve({
                 type: 3,
                 result: false,
@@ -16,7 +16,7 @@ async function runJava(problemId, filePath) {
         })
         compileProcess.on('close', e => {
 
-            const child = spawn('java', ['-cp', tempPath.replace('Solution.java', ''), 'Solution']);
+            const child = spawn('java', ['-cp', tempPath.replace('/Solution.java', ''), 'Solution']);
             testOutput(child, problemId)
                 .then(data => {
                     resolve(data)
