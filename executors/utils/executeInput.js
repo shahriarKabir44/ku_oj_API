@@ -40,7 +40,7 @@ async function executeInput(processChild, args) {
                     type: 3,
                     result: false,
                     message: errorMessage,
-                    verdict: 'ERRORxnxx',
+                    verdict: 'ERROR',
                     execTime: 'N/A'
 
                 })
