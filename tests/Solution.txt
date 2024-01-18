@@ -4,7 +4,14 @@ public class Solution {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         int x = scanner.nextInt();
-        int y = scanner.nextInt();
-        System.out.println(x * y );
+        for(int i=0;i<x;i++){
+            int x=scanner.nextInt();
+            if(x<6){
+                System.out.println("NO");
+                continue;
+            }
+                            System.out.println("YES");
+
+        }
     }
 }

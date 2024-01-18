@@ -14,8 +14,8 @@ services:
           "--silent"
         ]
       interval: 10s
-      timeout: 20s
-      retries: 100
+      timeout: 100s
+      retries: 1000
     environment:
       - MYSQL_ROOT_PASSWORD=Random1.
       - MYSQL_DATABASE=ku_oj
@@ -29,8 +29,8 @@ services:
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 50s
-      timeout: 30s
-      retries: 100
+      timeout: 100s
+      retries: 1000
       start_period: 30s
     ports:
       - "5000:6379"

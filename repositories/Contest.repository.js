@@ -21,6 +21,10 @@ module.exports = class ContestRepository {
 
             contest.status = 2
             executeSqlAsync({
+                sql: `update problem set isAvailable=1 where problem.contestId=?;`,
+                values: [contest.id]
+            })
+            executeSqlAsync({
                 sql: `update contest set status=2 where id=?;`,
                 values: [contest.id]
             })
@@ -32,6 +36,7 @@ module.exports = class ContestRepository {
         return executeSqlAsync({
             sql: `select id,title,points,numSolutions,
                 (select title from contest where contest.id = problem.contestId) as contestTitle
+                where problem.isAvailable=1
             from problem order by id desc limit ?,20;`,
             values: [pageNumber * 1]
 

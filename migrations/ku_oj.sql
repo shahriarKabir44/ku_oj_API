@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `contest` (
   UNIQUE KEY `title` (`title`),
   KEY `hostId` (`hostId`),
   CONSTRAINT `contest_ibfk_1` FOREIGN KEY (`hostId`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -100,11 +100,12 @@ CREATE TABLE IF NOT EXISTS `problem` (
   `numSolutions` int DEFAULT NULL,
   `code` varchar(255) DEFAULT NULL,
   `createdOn` mediumtext,
+  `isAvailable` int DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `contestId` (`contestId`),
   CONSTRAINT `problem_ibfk_1` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`),
   CONSTRAINT `problem_ibfk_2` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -135,7 +136,7 @@ CREATE TABLE IF NOT EXISTS `submission` (
   CONSTRAINT `submission_ibfk_4` FOREIGN KEY (`problemId`) REFERENCES `problem` (`id`),
   CONSTRAINT `submission_ibfk_5` FOREIGN KEY (`submittedBy`) REFERENCES `user` (`id`),
   CONSTRAINT `submission_ibfk_6` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -162,4 +163,4 @@ CREATE TABLE IF NOT EXISTS `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-12-26 19:34:16
+-- Dump completed on 2024-01-19  2:43:45
