@@ -14,8 +14,8 @@ services:
           "--silent"
         ]
       interval: 10s
-      timeout: 200s
-      retries: 1000
+      timeout: 20s
+      retries: 100
     environment:
       - MYSQL_ROOT_PASSWORD=Random1.
       - MYSQL_DATABASE=ku_oj
@@ -29,8 +29,8 @@ services:
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 50s
-      timeout: 300s
-      retries: 1000
+      timeout: 30s
+      retries: 100
       start_period: 30s
     ports:
       - "5000:6379"
@@ -60,7 +60,18 @@ services:
     image: shahriarkabir/ku_oj_ws:latest
     ports:
       - "8081:8081"
-
+  ku_oj:
+    image: shahriarkabir/ku_oj:latest
+    environment:
+      NODE_ENV: production
+      REACT_APP_SERVER_URL: http://192.168.138.134:8080
+      REACT_APP_WS_URL: wss://192.168.138.134:8081/
+    ports:
+      - 3000:3000
+    depends_on:
+      - ku_oj_db
+      - ku_oj_api
+      - ku_oj_ws
 volumes:
   mysql-data:
   cache:

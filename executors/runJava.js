@@ -16,7 +16,7 @@ async function runJava(problemId, filePath) {
         })
         compileProcess.on('close', e => {
 
-            const child = spawn('java', ['-cp', tempPath.replace('/Solution.java', ''), 'Solution']);
+            const child = spawn('java', ['-cp', tempPath.replace('Solution.java', ''), 'Solution']);
             testOutput(child, problemId)
                 .then(data => {
                     resolve(data)

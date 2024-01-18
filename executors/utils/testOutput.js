@@ -13,9 +13,10 @@ async function testOutput(processChild, problemId) {
             .then(data => testInputs = data),
 
         getFiles(`/testcases/${problemId}/out.txt`)
-            .then(data => expectedOutputs = data.split("\n"))
+            .then(data => expectedOutputs = data.split("\n").filter(d => d != ''))
 
     ])
+
     let outputs = []
     return new Promise((resolve, reject) => {
         executeInput(processChild, testInputs)
@@ -23,8 +24,9 @@ async function testOutput(processChild, problemId) {
                 if (!output.result) {
                     resolve(output)
                 }
-                outputs.push(output.data)
 
+                outputs.push(output.data)
+                output.data = output.data.filter(o => o != '')
                 if (output.data.length != expectedOutputs.length) {
                     reject({
                         result: false,
