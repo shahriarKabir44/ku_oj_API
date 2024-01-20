@@ -41,9 +41,9 @@ function startExpress() {
 
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {
-        initConnection()
-        RedisClient.init()
 
+        initConnection(process.env)
+        RedisClient.init()
     })
     app.use(require('cors')({
         origin: '*'
