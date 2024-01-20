@@ -4,8 +4,10 @@ class RedisClient {
     static client = {}
     static init() {
         let config = {
-            host: process.env.redisHost,
-            port: process.env.redisPort
+            socket: {
+                host: process.env.redisHost,
+                port: parseInt(process.env.redisPort)
+            }
         }
         if (process.env.redisPassword) {
             config['redisPassword'] = process.env.redisPassword
