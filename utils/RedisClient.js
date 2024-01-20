@@ -4,24 +4,22 @@ class RedisClient {
     static client = {}
     static init() {
         let config = {
-            socket: {
-                host: process.env.redisHost,
-                port: process.env.redisPort
-            }
+            host: process.env.redisHost,
+            port: process.env.redisPort
         }
         if (process.env.redisPassword) {
-            config[redisPassword] = process.env.redisPassword
+            config['redisPassword'] = process.env.redisPassword
         }
+        console.log(config)
         const client = redis.createClient(config)
         this.client = client
 
-        this.client.connect()
+        client.connect()
 
 
     }
     static async queryCache(key) {
         let data = await this.client.get(key)
-
         if (data == null) return null
         return (JSON.parse(data))
 
