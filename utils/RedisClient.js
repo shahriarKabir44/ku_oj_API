@@ -3,19 +3,16 @@ const redis = require('redis');
 class RedisClient {
     static client = {}
     static init() {
-        const client = process.env.mode == "prod" ? redis.createClient({
-            password: process.env.redisPassword,
+        let config = {
             socket: {
                 host: process.env.redisHost,
                 port: process.env.redisPort
             }
-        }) : redis.createClient({
-
-            socket: {
-                host: process.env.redisHost,
-                port: process.env.redisPort
-            }
-        })
+        }
+        if (process.env.redisPassword) {
+            config[redisPassword] = process.env.redisPassword
+        }
+        const client = redis.createClient(config)
         this.client = client
 
         this.client.connect()

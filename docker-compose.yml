@@ -48,8 +48,9 @@ services:
       - dbPassword=Random1.
       - dbHost=ku_oj_db
       - ssl=null
-      - redisHost=ku_oj_redis
-      - redisPort=6379
+      - redisHost=redis-15855.c295.ap-southeast-1-1.ec2.cloud.redislabs.com
+      - redisPort=15855
+      - redisPassword=BEyNtyWFEggV7X25wdDz2Y2J5bGCpixr
     depends_on:
       ku_oj_db:
         condition: service_healthy
@@ -64,8 +65,8 @@ services:
     image: shahriarkabir/ku_oj:latest
     environment:
       NODE_ENV: production
-      REACT_APP_SERVER_URL: http://192.168.138.134:8080
-      REACT_APP_WS_URL: wss://192.168.138.134:8081/
+      REACT_APP_SERVER_URL: http://192.168.104.134:8080
+      REACT_APP_WS_URL: wss://192.168.104.134:8081/
     ports:
       - 3000:3000
     depends_on:

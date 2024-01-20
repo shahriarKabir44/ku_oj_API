@@ -3,9 +3,7 @@ const cluster = require('cluster');
 const totalCPUs = require('os').cpus().length;
 const { initConnection } = require('./utils/dbConnection');
 const { RedisClient } = require('./utils/RedisClient');
-const http = require('http');
 const { executeSqlAsync } = require('./utils/executeSqlAsync');
-const WebSocket = require('ws')
 const workers = []
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands) {
@@ -41,10 +39,12 @@ function startExpress() {
 
     const app = express()
 
-    initConnection(process.env)
-    RedisClient.init()
     const PORT = process.env.PORT || 8080;
-    app.listen(PORT)
+    app.listen(PORT, () => {
+        initConnection()
+        RedisClient.init()
+
+    })
     app.use(require('cors')({
         origin: '*'
     }))
