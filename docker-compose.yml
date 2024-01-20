@@ -48,9 +48,7 @@ services:
       - dbPassword=Random1.
       - dbHost=ku_oj_db
       - ssl=null
-      - redisHost=redis-15855.c295.ap-southeast-1-1.ec2.cloud.redislabs.com
-      - redisPort=15855
-      - redisPassword=BEyNtyWFEggV7X25wdDz2Y2J5bGCpixr
+      - redisConString=redis://ku_oj_redis:6379
     depends_on:
       ku_oj_db:
         condition: service_healthy
