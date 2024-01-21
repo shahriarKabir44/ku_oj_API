@@ -28,6 +28,15 @@ module.exports = class ContestRepository {
                 sql: `update contest set status=2 where id=?;`,
                 values: [contest.id]
             })
+            executeSqlAsync({
+                sql: `select * from problem where problem.contestId=?;`,
+                values: [contest.id]
+            }).then(problems => {
+                problems.forEach(problem => {
+                    problem.isAvailable = 1
+                    RedisClient.store(`problem_${problem.id}`, problem)
+                })
+            })
             RedisClient.store(`contest_${contest.id}`, contest)
             this.setStandings(contest.id)
         }, timeSpan)
