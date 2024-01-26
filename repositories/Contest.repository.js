@@ -15,38 +15,39 @@ module.exports = class ContestRepository {
             sql: `update contest set status=1 where id=?;`,
             values: [contest.id]
         })
+        executeSqlAsync({
+            sql: `select * from problem where problem.contestId=?;`,
+            values: [contest.id]
+        }).then(problems => {
+            problems.forEach(problem => {
+                problem.isAvailable = 1
+                RedisClient.store(`problem_${problem.id}`, problem)
+            })
+        })
+        executeSqlAsync({
+            sql: `update problem set isAvailable=1 where problem.contestId=?;`,
+            values: [contest.id]
+        })
 
         RedisClient.store(`contest_${contest.id}`, contest)
         setTimeout(() => {
 
             contest.status = 2
-            executeSqlAsync({
-                sql: `update problem set isAvailable=1 where problem.contestId=?;`,
-                values: [contest.id]
-            })
+
             executeSqlAsync({
                 sql: `update contest set status=2 where id=?;`,
                 values: [contest.id]
             })
-            executeSqlAsync({
-                sql: `select * from problem where problem.contestId=?;`,
-                values: [contest.id]
-            }).then(problems => {
-                problems.forEach(problem => {
-                    problem.isAvailable = 1
-                    RedisClient.store(`problem_${problem.id}`, problem)
-                })
-            })
+
             RedisClient.store(`contest_${contest.id}`, contest)
             this.setStandings(contest.id)
         }, timeSpan)
     }
     static async getProblems({ pageNumber }) {
         return executeSqlAsync({
-            sql: `select id,title,points,numSolutions,
+            sql: `select id,title,points,numSolutions,contestId,
                 (select title from contest where contest.id = problem.contestId) as contestTitle
-                where problem.isAvailable=1
-            from problem order by id desc limit ?,20;`,
+            from problem where problem.isAvailable=1 order by id desc limit ?,20;`,
             values: [pageNumber * 1]
 
         })
