@@ -54,6 +54,9 @@ services:
         condition: service_healthy
       ku_oj_redis:
         condition: service_healthy
+    volumes:
+      - submissions:/executors/submissions
+      - problemStatements:/problemStatements
 
   ku_oj_ws:
     image: shahriarkabir/ku_oj_ws:latest
@@ -63,8 +66,8 @@ services:
     image: shahriarkabir/ku_oj:latest
     environment:
       NODE_ENV: production
-      REACT_APP_SERVER_URL: http://192.168.104.134:8080
-      REACT_APP_WS_URL: wss://192.168.104.134:8081/
+      REACT_APP_SERVER_URL: http://172.118.34.195:8080
+      REACT_APP_WS_URL: wss://172.118.34.195:8081/
     ports:
       - 3000:3000
     depends_on:
@@ -75,3 +78,5 @@ volumes:
   mysql-data:
   cache:
     driver: local
+  submissions:
+  problemStatements:

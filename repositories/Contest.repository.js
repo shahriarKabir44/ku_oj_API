@@ -106,11 +106,12 @@ module.exports = class ContestRepository {
         })
     }
     static async getContests() {
+        let now = new Date() * 1
         return executeSqlAsync({
             sql: `SELECT id,startTime,endTime,title,hostId, 
                 (select userName from user WHERE user.id=hostId) 
-                as hostName from contest order by startTime desc;`,
-            values: []
+                as hostName from contest where contest.endTime<? order by startTime desc;`,
+            values: [now]
         })
     }
 
