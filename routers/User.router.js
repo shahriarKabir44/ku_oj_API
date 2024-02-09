@@ -12,6 +12,7 @@ UserRouter.get('/isAuthorized', (req, res) => {
 })
 
 UserRouter.post('/register', (req, res) => {
+    
     UserRepository.register(req.body)
         .then(data => {
             res.send(data)

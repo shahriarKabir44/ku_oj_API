@@ -6,5 +6,5 @@
 /problemStatements/*
 .env.dev
 .env.prod
-
+*.vs
 *.vscode
