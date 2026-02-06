@@ -285,7 +285,7 @@ module.exports = class ContestRepository {
         })
     }
     static async hasSolvedProblem_({ userId, problemId }) {
-
+        
         let contest = await this.findContestByProblemId(problemId)
         let contestResult = await ContestResult.find({
             contestantId: userId,

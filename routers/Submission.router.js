@@ -45,8 +45,9 @@ SubmissionRouter.get('/getUserSubmissions/:userId/:pageNumber', (req, res) => {
         })
 })
 
-SubmissionRouter.get('/rejudgeContestSubmissions/:contestId', (req, res) => {
-    rejudgeAllSubmissionOfContest(req.params)
+SubmissionRouter.get('/rejudgeContestSubmissions', (req, res) => {
+    console.log(req.query);
+    rejudgeAllSubmissionOfContest(req.query)
         .then(data => {
             res.send({ data: 1 })
 

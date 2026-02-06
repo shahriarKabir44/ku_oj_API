@@ -1,16 +1,17 @@
 
 const { executeSqlAsync } = require("../../utils/executeSqlAsync");
+const QueryBuilder = require("../../utils/queryBuilder");
 
 const { ContestResult } = require("../ContestResult.class");
 const { rejudgeProblemsSubmissions } = require("./RejudgeProblemsSubmissions");
 
 
-async function rejudgeAllSubmissionOfContest({ contestId }) {
+async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
     let problems = await executeSqlAsync({
         sql: `SELECT * from problem WHERE
-                    problem.contestId=?;`,
-        values: [contestId]
-    })
+                    problem.contestId=? ${problemId ? 'and id=?' : ''};`,
+        values: problemId ? [contestId, problemId] : [contestId]
+    });
     let _contestResults = await executeSqlAsync({
         sql: `select * from contestResult where contestId=?`,
         values: [contestId]

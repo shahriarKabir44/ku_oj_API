@@ -5,6 +5,7 @@ const path = require("path");
 
 
 async function runPython(problemId, filePath) {
+    // console.log(filePath);
     let contentPath = path.join(__dirname, filePath);
     //let pythonDir = (process.env.compilersRootDir ?? "") + "python";
     const child = spawn('/usr/bin/python3', [contentPath]);
