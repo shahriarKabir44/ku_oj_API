@@ -4,30 +4,14 @@ const SubmissionRepository = require('../repositories/Submission.repository')
 const { rejudgeAllSubmissionOfContest } = require('../repositories/contest_rejudge/RejudgeAllSubmissionOfContest')
 const { upload } = require('../utils/fileManager')
 
-SubmissionRouter.post('/submit', [(req, res, next) => {
-    SubmissionRepository.createSubmission(JSON.parse(req.headers.additionals))
-        .then(submissionId => {
-            req.headers.submissionid = submissionId
-            req.submissionId = submissionId
-            next()
+SubmissionRouter.post('/submit', (req, res) => {
+    SubmissionRepository.createSubmission(JSON.parse(req.headers.additionals), req)
+        .then(response => {
+            res.send({ ...response })
         })
-}, upload.single('file'), (req, res, next) => {
-    req.submissionFileURL = req.fileDir + '/' + req.filename
-    next()
-}], (req, res) => {
-    let data = JSON.parse(req.headers.additionals)
-    data.submissionId = req.submissionId
-    data.submissionFileURL = req.submissionFileURL
-    SubmissionRepository.setSubmissionFileURL({
-        id: req.submissionId,
-        submissionFileURL: req.submissionFileURL
-    })
-    let judgeRepository = new JudgeRepository({ ...data, ext: req.headers.ext })
-    judgeRepository.judgeSubmission()
-        .then(resp => {
-            res.send(resp)
+        .catch(response => {
+            res.send({ error: response })
         })
-    judgeRepository = null
 })
 
 SubmissionRouter.post('/getPreviousSubmissionsOfProblem', (req, res) => {

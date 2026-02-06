@@ -3,7 +3,6 @@ const redis = require('redis');
 class RedisClient {
     static client = {}
     static init() {
-
         const client = redis.createClient({
             url: process.env.redisConString
         })

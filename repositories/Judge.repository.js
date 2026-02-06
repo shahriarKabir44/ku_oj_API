@@ -34,9 +34,14 @@ module.exports = class JudgeRepository {
         this.isNewContestSubmission = false
         this.languageName = languageName
     }
-    async judgeSubmission() {
+    transaction = null;
+    async judgeSubmission(transaction) {
+        this.transaction = transaction
         await this.getContestResult()
         let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
+        if (data == null) {
+            return null;
+        }
         this.verdictType = data.type
         this.errorMessage = data.message
         this.execTime = data.execTime
@@ -88,7 +93,7 @@ module.exports = class JudgeRepository {
                 sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime', 'isOfficial', 'errorMessage'])}
                  where id=?;`,
                 values: [this.verdict, this.execTime, this.isOfficial, this.errorMessage, this.submissionId]
-            })
+            }, this.transaction)
         ])
 
 
@@ -165,18 +170,18 @@ module.exports = class JudgeRepository {
     }
     async setScoreWhenAccepted() {
         if ((this.isOfficial && this.contestResult.official_description[this.problemId][0] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][0] == 1)) {
-            executeSqlAsync({
+            await executeSqlAsync({
                 sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
                 values: [this.problemId]
-            })
+            }, this.transaction)
 
-            this.updateContestResult()
+            await this.updateContestResult()
         }
     }
 
     async updateContestResult() {
         if (this.isNewContestSubmission) {
-            return this.contestResult.store()
+            return this.contestResult.store(this.transaction)
         }
         return this.contestResult.updateAndStore()
 

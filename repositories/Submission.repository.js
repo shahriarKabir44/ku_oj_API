@@ -1,6 +1,11 @@
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 const { getFiles } = require('../executors/getFiles')
 const QueryBuilder = require('../utils/queryBuilder')
+const { beginTransaction } = require('../utils/dbConnection')
+const fs = require('fs/promises');
+const { getUploadedFileName, getUploadFilePath } = require('../utils/fileManager');
+const JudgeRepository = require('./Judge.repository');
+const path = require('path');
 module.exports = class SubmissionRepository {
     static async getPreviousSubmissionsOfProblem({ problemId, userId }) {
         return executeSqlAsync({
@@ -75,27 +80,64 @@ module.exports = class SubmissionRepository {
         }
 
     }
-    static async createSubmission({ problemId, submittedBy, time, languageName, contestId, isOfficial }) {
-        await executeSqlAsync({
-            sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId', 'isOfficial']),
-            values: [problemId, submittedBy, time, languageName, contestId, isOfficial]
-        })
-        let [{ submissionId }] = await executeSqlAsync({
-            sql: `select max(id) as submissionId
+    static async createSubmission({ problemId, submittedBy, time, languageName, contestId, isOfficial }, httpRequest) {
+        var transaction = await beginTransaction(process.env);
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId', 'isOfficial']),
+                values: [problemId, submittedBy, time, languageName, contestId, isOfficial]
+            }, transaction)
+            let [{ submissionId }] = await executeSqlAsync({
+                sql: `select max(id) as submissionId
                     from submission
                     WHERE
                 problemId =? and submittedBy =?; `,
-            values: [problemId, submittedBy]
-        })
-        return submissionId
-    }
-    static async setSubmissionFileURL({ id, submissionFileURL }) {
-        executeSqlAsync({
-            sql: `update submission set submissionFileURL=?
+                values: [problemId, submittedBy]
+            }, transaction);
+
+
+            let [dbPath, relativePath] = getUploadFilePath(httpRequest);
+            if (!dbPath) throw new Error("Invalid File Dir!");
+
+            let fileName = getUploadedFileName(httpRequest, submissionId);
+            if (!fileName) throw new Error("Invalid File Name!");
+
+            const filePath = path.join(relativePath, fileName);
+            let fileContent = httpRequest.body.textContent;
+
+
+            await fs.writeFile(filePath, fileContent, 'utf8');
+            let dbPathFull = path.join(dbPath, fileName)
+            let data = JSON.parse(httpRequest.headers.additionals)
+
+
+            await executeSqlAsync({
+                sql: `update submission set submissionFileURL=?
                 where id=?;`,
-            values: [submissionFileURL, id]
-        })
+                values: [dbPathFull, submissionId]
+            }, transaction)
+
+            let judgeRepository = new JudgeRepository({ ...data, ext: httpRequest.headers.ext, submissionFileURL: dbPathFull, submissionId })
+            let judgeOutput = await judgeRepository.judgeSubmission(transaction)
+            if (judgeOutput == null) {
+                throw new Error("Something went wrong!");
+            }
+            judgeRepository = null
+
+
+            transaction.commit();
+            return judgeOutput
+
+        } catch (error) {
+            transaction.rollback();
+            return error;
+        }
+        finally {
+            transaction.destroy();
+        }
+
     }
+
     static async getContestSubmissions({ contestId, pageNumber }) {
         return executeSqlAsync({
             sql: `select

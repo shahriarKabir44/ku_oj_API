@@ -71,7 +71,7 @@ class ContestResult {
         contestResult.unofficial_ac_time = _contestResult.unofficial_ac_time ? JSON.parse(_contestResult.unofficial_ac_time) : {}
         return contestResult
     }
-    async store() {
+    async store(transaction) {
         return Promise.all([
             executeSqlAsync({
                 sql: QueryBuilder.insertQuery('contestResult', ['contestId',
@@ -82,7 +82,7 @@ class ContestResult {
                 JSON.stringify(this.official_description), this.official_points,
                 JSON.stringify(this.officialVerdicts), JSON.stringify(this.verdicts), this.hasAttemptedOfficially, this.hasAttemptedUnofficially,
                 JSON.stringify(this.unofficial_ac_time), JSON.stringify(this.official_ac_time)]
-            }),
+            }, transaction),
             this.storeInRedis()
         ])
     }

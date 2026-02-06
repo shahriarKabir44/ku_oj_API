@@ -2,66 +2,73 @@ const multer = require('multer')
 
 const fs = require('fs')
 const storage = multer.diskStorage({
-    destination: (req, res, cb) => {
-        const { filetype, problemid } = req.headers
-        let path = 'executors/'
-        let tempPath = ''
-        if (filetype == 'submission') {
-            const { postedby, contestid } = req.headers
-            path += `/submissions/${contestid}/${postedby}/${problemid}`
-            tempPath += `/submissions/${contestid}/${postedby}/${problemid}`
-            const { submissionid, ext } = req.headers
-
-            if (ext == 'cpp' || ext == 'java') {
-                path += `/${submissionid}`
-                tempPath += `/${submissionid}`
-            }
-        }
-        else if (filetype == 'testcaseoutput' || filetype == 'testcaseinput') {
-            path += `/testcases/${problemid}`
-            tempPath += `/testcases/${problemid}`
-        }
-        else if (filetype == 'statementfile') {
-            path = `problemStatements/`
-            tempPath = ``
-
-        }
-
-        if (!fs.existsSync(path)) {
-            fs.mkdirSync(path, { recursive: true });
-        }
-        req.fileDir = tempPath
-        return cb(null, path)
-
-    },
-    filename: (req, res, cb) => {
-        const { filetype, ext } = req.headers
-        let filename = ""
-        if (filetype == 'submission') {
-            const { submissionid } = req.headers
-            filename = submissionid
-            if (req.headers.ext == 'java') {
-                filename = 'Solution'
-            }
-        }
-        else if (filetype == 'testcaseinput') {
-
-            filename = 'in'
-        }
-
-        else if (filetype == 'testcaseoutput') {
-
-            filename = 'out'
-        }
-        else if (filetype == 'statementfile') {
-            const { problemid } = req.headers
-            filename = problemid
-        }
-        req.filename = `${filename}.${ext}`
-        cb(null, `${filename}.${ext}`)
-    }
+    destination: (req, res, cb) => cb(null, getUploadFilePath(req)),
+    filename: (req, res, cb) => cb(null, getUploadedFileName(req))
 })
 
-const upload = multer({ storage })
+function getUploadFilePath(req) {
+    const { filetype, problemid } = req.headers
+    let path = 'executors/'
+    let tempPath = ''
+    if (filetype == 'submission') {
+        const { postedby, contestid } = req.headers
+        path += `/submissions/${contestid}/${postedby}/${problemid}`
+        tempPath += `/submissions/${contestid}/${postedby}/${problemid}`
+        const { submissionid, ext } = req.headers
 
-module.exports = { upload };
+        if (ext == 'cpp' || ext == 'java') {
+            path += `/${submissionid}`
+            tempPath += `/${submissionid}`
+        }
+    }
+    else if (filetype == 'testcaseoutput' || filetype == 'testcaseinput') {
+        path += `/testcases/${problemid}`
+        tempPath += `/testcases/${problemid}`
+    }
+    else if (filetype == 'statementfile') {
+        path = `problemStatements/`
+        tempPath = ``
+
+    }
+    else return null
+
+    if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
+    }
+    req.fileDir = tempPath
+    return [tempPath, path]
+}
+
+function getUploadedFileName(req, submissionid = 0) {
+    const { filetype, ext } = req.headers
+    let filename = ""
+    if (filetype == 'submission') {
+        filename = submissionid
+        if (req.headers.ext == 'java') {
+            filename = 'Solution'
+        }
+    }
+    else if (filetype == 'testcaseinput') {
+
+        filename = 'in'
+    }
+
+    else if (filetype == 'testcaseoutput') {
+
+        filename = 'out'
+    }
+    else if (filetype == 'statementfile') {
+        const { problemid } = req.headers
+        filename = problemid
+    }
+    else {
+        return null;
+    }
+    req.filename = `${filename}.${ext}`
+    return `${filename}.${ext}`
+
+}
+
+const upload = multer({ storage })
+upload.single()
+module.exports = { upload, getUploadFilePath, getUploadedFileName };

@@ -1,9 +1,10 @@
 const { connection } = require('./dbConnection')
 
 
-function executeSqlAsync({ sql, values }) {
+function executeSqlAsync({ sql, values }, transactionConnection = null) {
+    let connectionObj = transactionConnection ?? connection.connection;
     return new Promise(function (resolve, reject) {
-        connection.connection.query({
+        connectionObj.query({
             sql, values
         }, (err, rows) => {
             if (err) reject(err)
