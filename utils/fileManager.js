@@ -69,6 +69,23 @@ function getUploadedFileName(req, submissionid = 0) {
 
 }
 
-const upload = multer({ storage })
-upload.single()
+// allowed mimetypes: images and pdf
+const ALLOWED_MIMETYPES = [
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml'
+]
+
+function fileFilter(req, file, cb) {
+    if (ALLOWED_MIMETYPES.includes(file.mimetype)) cb(null, true)
+    else cb(null, false)
+}
+
+// limit to a single file upload
+const upload = multer({ storage, fileFilter, limits: { files: 1 } })
+
 module.exports = { upload, getUploadFilePath, getUploadedFileName };
