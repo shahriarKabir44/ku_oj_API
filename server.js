@@ -55,15 +55,7 @@ function startExpress() {
     app.use('/contests', require('./routers/Contest.router'))
     app.use('/submission', require('./routers/Submission.router'))
     app.use('/user', require('./routers/User.router'))
-    app.get('/test', (req, res) => {
-        executeSqlAsync({
-            sql: `select * from user;`,
-            values: []
-        }).then(data => {
-            res.send(data)
 
-        })
-    })
 
 }
 

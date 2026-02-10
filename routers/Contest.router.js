@@ -2,12 +2,13 @@ const { getFiles } = require('../executors/getFiles')
 const ContestRepository = require('../repositories/Contest.repository')
 const { ContestResult } = require('../repositories/ContestResult.class')
 const JudgeRepository = require('../repositories/Judge.repository')
-const { validateJWT } = require('../utils/validateJWT')
+const { executeSqlAsync } = require('../utils/executeSqlAsync')
+const { validateJWT, jwtValidator } = require('../utils/validateJWT')
 
 const ContestRouter = require('express').Router()
+//ContestRouter.use(validateJWT)
 
-
-ContestRouter.post('/createContest', (req, res) => {
+ContestRouter.post('/createContest', validateJWT, (req, res) => {
     ContestRepository.createContest(req.body)
         .then(contestId => {
             res.send({ contestId })
@@ -35,7 +36,7 @@ ContestRouter.get('/getContests', (req, res) => {
             res.send(contests)
         })
 })
-ContestRouter.post('/createProblem', (req, res) => {
+ContestRouter.post('/createProblem', validateJWT, (req, res) => {
     ContestRepository.createProblem(req.body)
         .then(problemId => {
             res.send({ problemId })
@@ -93,7 +94,17 @@ ContestRouter.post('/getContestStandings', (req, res) => {
 })
 
 
-ContestRouter.get('/getProblemFiles/:problemId', async (req, res) => {
+ContestRouter.get('/getProblemFiles/:problemId', jwtValidator, async (req, res) => {
+    let problem = await executeSqlAsync({
+        sql: `select * from problem where id=? and createById=?`,
+        values: [req.params.problemId, req.user.id]
+    })
+    if (problem == null) {
+        res.send({
+            data: null,
+            errorMsg: "Invalid Request!"
+        })
+    }
     let testcase = await getFiles(`/testcases/${req.params.problemId}/in.txt`)
     let output = await getFiles(`/testcases/${req.params.problemId}/out.txt`)
     testcase = testcase.toString()
@@ -102,14 +113,36 @@ ContestRouter.get('/getProblemFiles/:problemId', async (req, res) => {
 })
 
 
-ContestRouter.post('/updateContestInfo', (req, res) => {
-    ContestRepository.updateContestInfo(req.body)
+ContestRouter.post('/updateContestInfo', jwtValidator, (req, res) => {
+
+    ContestRepository.updateContestInfo(req.body, req.user)
+        .then(data => {
+            res.send({
+                data: "",
+                errorMsg: ""
+            })
+        })
+        .catch(err => {
+            res.send({
+                data: null,
+                errorMsg: err
+            })
+        })
 })
 
-ContestRouter.post('/updateProblemInfo', (req, res) => {
-    ContestRepository.updateProblemInfo(req.body)
-        .then(() => {
-            res.send({ success: 1 })
+ContestRouter.post('/updateProblemInfo', jwtValidator, (req, res) => {
+    ContestRepository.updateProblemInfo(req.body, req.user)
+        .then(data => {
+            res.send({
+                data: "",
+                errorMsg: ""
+            })
+        })
+        .catch(err => {
+            res.send({
+                data: null,
+                errorMsg: err
+            })
         })
 })
 
@@ -127,7 +160,7 @@ ContestRouter.get('/getProblems/:pageNumber', (req, res) => {
 })
 
 
-ContestRouter.post('/saveMessageToContestThread', (req, res) => {
+ContestRouter.post('/saveMessageToContestThread', jwtValidator, (req, res) => {
     ContestRepository.saveMessageToContestThread(req.body)
         .then(() => {
             res.send({ data: 1 })

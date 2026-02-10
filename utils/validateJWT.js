@@ -1,7 +1,25 @@
 const jwt = require('jsonwebtoken')
 
-async function validateJWT(token) {
 
+function jwtValidator(req, res, next) {
+
+    validateJWT(req.headers['token'])
+        .then(({ user }) => {
+            if (!user) {
+                res.send({
+                    data: null,
+                    errorMsg: "Invalid User!"
+                })
+            }
+            else {
+                req.user = user;
+                next();
+            }
+        })
+
+}
+
+async function validateJWT(token) {
 
     if (!token) return { user: null, token: null }
     else {
@@ -24,4 +42,4 @@ async function validateJWT(token) {
 
     }
 }
-module.exports = { validateJWT }
+module.exports = { validateJWT, jwtValidator }

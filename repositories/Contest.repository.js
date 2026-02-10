@@ -46,8 +46,10 @@ module.exports = class ContestRepository {
     static async getProblems({ pageNumber }) {
         return executeSqlAsync({
             sql: `select id,title,points,numSolutions,contestId,
-                (select title from contest where contest.id = problem.contestId) as contestTitle
-            from problem where problem.isAvailable=1 order by id desc limit ?,20;`,
+                contest. title  as contestTitle
+            from problem
+            inner join contest on contest.id = problem.contestId
+            where problem.isAvailable=1 order by id desc limit ?,20;`,
             values: [pageNumber * 1]
 
         })
@@ -220,7 +222,12 @@ module.exports = class ContestRepository {
     }
 
 
-    static async updateContestInfo({ id, title, startTime, endTime, code }) {
+    static async updateContestInfo({ id, title, startTime, endTime, code }, user) {
+        let contest = await this.findContestById({ id });
+        if (!contest || contest.hostId != user.id) {
+            throw new Error("Invalid Request!");
+
+        }
         await executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('contest',
                 ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
@@ -238,7 +245,11 @@ module.exports = class ContestRepository {
             })
 
     }
-    static async updateProblemInfo({ id, title, code, points }) {
+    static async updateProblemInfo({ id, title, code, points }, user) {
+        let problem = await this.findProblemById(id);
+        if (!problem || problem.createById != user.id) {
+            throw new Error("Invalid Request!");
+        }
         await executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('problem',
                 ['title', 'code', 'points']) + ` where id=?;`,
@@ -285,7 +296,7 @@ module.exports = class ContestRepository {
         })
     }
     static async hasSolvedProblem_({ userId, problemId }) {
-        
+
         let contest = await this.findContestByProblemId(problemId)
         let contestResult = await ContestResult.find({
             contestantId: userId,
