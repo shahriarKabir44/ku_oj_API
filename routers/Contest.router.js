@@ -4,112 +4,128 @@ const { ContestResult } = require('../repositories/ContestResult.class')
 const JudgeRepository = require('../repositories/Judge.repository')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 const { validateJWT, jwtValidator } = require('../utils/validateJWT')
+const { sendSuccess, sendError } = require('../utils/responseHelper')
+const { validate } = require('../utils/validateRequest')
+const Joi = require('joi')
 
 const ContestRouter = require('express').Router()
 //ContestRouter.use(validateJWT)
 
-ContestRouter.post('/createContest', validateJWT, (req, res) => {
+ContestRouter.post('/createContest', validate(Joi.object().unknown(true)), validateJWT, (req, res) => {
     ContestRepository.createContest(req.body)
         .then(contestId => {
-            res.send({ contestId })
+            return sendSuccess(res, { contestId })
         })
+        .catch(err => sendError(res, err))
 })
 
 
 ContestRouter.get('/getUpcomingContests', (req, res) => {
     ContestRepository.getUpcomingContests(req.body)
         .then(contests => {
-            res.send(contests)
+            return sendSuccess(res, contests)
         })
+        .catch(err => sendError(res, err))
 })
 
-ContestRouter.get('/getFullContestDetails/:contestId', (req, res) => {
+ContestRouter.get('/getFullContestDetails/:contestId', validate(Joi.object({ contestId: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getFullContestDetails(req.params)
         .then(fullContestDetails => {
-            res.send(fullContestDetails)
+            return sendSuccess(res, fullContestDetails)
         })
+        .catch(err => sendError(res, err))
 })
 
 ContestRouter.get('/getContests', (req, res) => {
     ContestRepository.getContests()
         .then(contests => {
-            res.send(contests)
+            return sendSuccess(res, contests)
         })
+        .catch(err => sendError(res, err))
 })
-ContestRouter.post('/createProblem', validateJWT, (req, res) => {
+ContestRouter.post('/createProblem', validate(Joi.object().unknown(true)), validateJWT, (req, res) => {
     ContestRepository.createProblem(req.body)
         .then(problemId => {
-            res.send({ problemId })
+            return sendSuccess(res, { problemId })
         })
+        .catch(err => sendError(res, err))
 })
 
 
-ContestRouter.get('/getContestProblems/:id', (req, res) => {
+ContestRouter.get('/getContestProblems/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getContestProblems(req.params)
         .then(contestProblems => {
-            res.send({ contestProblems })
+            return sendSuccess(res, { contestProblems })
         })
+        .catch(err => sendError(res, err))
 })
-ContestRouter.get('/findContestById/:id', (req, res) => {
+ContestRouter.get('/findContestById/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.findContestById(req.params)
         .then(contestInfo => {
             ContestRepository.beginContest(contestInfo)
-            res.send({ contestInfo })
+            return sendSuccess(res, { contestInfo })
         })
+        .catch(err => sendError(res, err))
 })
 
-ContestRouter.get('/getProblemInfo/:id', (req, res) => {
+ContestRouter.get('/getProblemInfo/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getProblemInfo(req.params)
         .then(problemInfo => {
-            res.send({ problemInfo })
+            return sendSuccess(res, { problemInfo })
         })
+        .catch(err => sendError(res, err))
 })
 
-ContestRouter.get('/searchContestByProblem/:problemId', (req, res) => {
+ContestRouter.get('/searchContestByProblem/:problemId', validate(Joi.object({ problemId: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.searchContestByProblem(req.params)
         .then(contest => {
-            res.send(contest)
+            return sendSuccess(res, contest)
         })
+        .catch(err => sendError(res, err))
 })
 
-ContestRouter.get('/getContestResult/:contestantId/:contestId', (req, res) => {
+ContestRouter.get('/getContestResult/:contestantId/:contestId', validate(Joi.object({ contestantId: Joi.number().required(), contestId: Joi.number().required() }), 'params'), (req, res) => {
     ContestResult.find(req.params)
         .then(contestResult => {
-            res.send(contestResult)
+            return sendSuccess(res, contestResult)
         })
+        .catch(err => sendError(res, err))
 })
 
-ContestRouter.get('/hasSolvedProblem_/:userId/:problemId', (req, res) => {
+ContestRouter.get('/hasSolvedProblem_/:userId/:problemId', validate(Joi.object({ userId: Joi.number().required(), problemId: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.hasSolvedProblem_(req.params)
         .then(verdicts => {
-            res.send(verdicts)
+            return sendSuccess(res, verdicts)
         })
+        .catch(err => sendError(res, err))
 })
 
 ContestRouter.post('/getContestStandings', (req, res) => {
     ContestRepository.getContestStandings(req.body)
         .then(standings => {
-            res.send(standings)
+            return sendSuccess(res, standings)
         })
+        .catch(err => sendError(res, err))
 })
 
 
 ContestRouter.get('/getProblemFiles/:problemId', jwtValidator, async (req, res) => {
-    let problem = await executeSqlAsync({
-        sql: `select * from problem where id=? and createById=?`,
-        values: [req.params.problemId, req.user.id]
-    })
-    if (problem == null) {
-        res.send({
-            data: null,
-            errorMsg: "Invalid Request!"
+    try {
+        let problem = await executeSqlAsync({
+            sql: `select * from problem where id=? and createById=?`,
+            values: [req.params.problemId, req.user.id]
         })
+        if (problem == null) {
+            return sendError(res, 'Invalid Request!', 400)
+        }
+        let testcase = await getFiles(`/testcases/${req.params.problemId}/in.txt`)
+        let output = await getFiles(`/testcases/${req.params.problemId}/out.txt`)
+        testcase = testcase.toString()
+        output = output.toString()
+        return sendSuccess(res, { testcase, output })
+    } catch (err) {
+        return sendError(res, err)
     }
-    let testcase = await getFiles(`/testcases/${req.params.problemId}/in.txt`)
-    let output = await getFiles(`/testcases/${req.params.problemId}/out.txt`)
-    testcase = testcase.toString()
-    output = output.toString()
-    res.send({ testcase, output })
 })
 
 
@@ -117,68 +133,61 @@ ContestRouter.post('/updateContestInfo', jwtValidator, (req, res) => {
 
     ContestRepository.updateContestInfo(req.body, req.user)
         .then(data => {
-            res.send({
-                data: "",
-                errorMsg: ""
-            })
+            return sendSuccess(res, "")
         })
         .catch(err => {
-            res.send({
-                data: null,
-                errorMsg: err
-            })
+            return sendError(res, err)
         })
 })
 
 ContestRouter.post('/updateProblemInfo', jwtValidator, (req, res) => {
     ContestRepository.updateProblemInfo(req.body, req.user)
         .then(data => {
-            res.send({
-                data: "",
-                errorMsg: ""
-            })
+            return sendSuccess(res, "")
         })
         .catch(err => {
-            res.send({
-                data: null,
-                errorMsg: err
-            })
+            return sendError(res, err)
         })
 })
 
-ContestRouter.get('/getParticipatedContestList/:userId/:pageNumber', (req, res) => {
+ContestRouter.get('/getParticipatedContestList/:userId/:pageNumber', validate(Joi.object({ userId: Joi.number().required(), pageNumber: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getParticipatedContestList(req.params)
         .then(participatedContestList => {
-            res.send(participatedContestList)
+            return sendSuccess(res, participatedContestList)
         })
+        .catch(err => sendError(res, err))
 })
-ContestRouter.get('/getProblems/:pageNumber', (req, res) => {
+ContestRouter.get('/getProblems/:pageNumber', validate(Joi.object({ pageNumber: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getProblems(req.params)
         .then(problems => {
-            res.send(problems)
+            return sendSuccess(res, problems)
         })
+        .catch(err => sendError(res, err))
 })
 
 
 ContestRouter.post('/saveMessageToContestThread', jwtValidator, (req, res) => {
     ContestRepository.saveMessageToContestThread(req.body)
         .then(() => {
-            res.send({ data: 1 })
+            return sendSuccess(res, { data: 1 })
         })
+        .catch(err => sendError(res, err))
 })
 
-ContestRouter.get('/getContestMessages/:contestId', (req, res) => {
+ContestRouter.get('/getContestMessages/:contestId', validate(Joi.object({ contestId: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getContestMessages(req.params)
         .then(messages => {
-            res.send(messages)
+            return sendSuccess(res, messages)
         })
+        .catch(err => sendError(res, err))
 })
-ContestRouter.get('/setStandings/:contestId', (req, res) => {
+ContestRouter.get('/setStandings/:contestId', validate(Joi.object({ contestId: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.setStandings(req.params.contestId)
         .then(() => {
-            res.send({ data: 1 })
+            return sendSuccess(res, { data: 1 })
 
         })
+        .catch(err => sendError(res, err))
 })
 
 module.exports = ContestRouter

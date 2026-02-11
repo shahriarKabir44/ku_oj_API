@@ -3,22 +3,23 @@ const { getFileDir } = require('../executors/getFiles')
 const { upload } = require('../utils/fileManager')
 const fs = require('fs')
 const multer = require('multer')
+const { sendSuccess, sendError } = require('../utils/responseHelper')
 
 function singleUploadMiddleware(req, res, next) {
     upload.single('file')(req, res, (err) => {
         if (err) {
-            if (err instanceof multer.MulterError) return res.status(400).send({ error: err.message })
-            return res.status(500).send({ error: 'File upload failed' })
+            if (err instanceof multer.MulterError) return sendError(res, err.message, 400)
+            return sendError(res, 'File upload failed', 500)
         }
         // if fileFilter rejected the file, multer doesn't set req.file
-        if (!req.file) return res.status(400).send({ error: 'No file uploaded or invalid file type. Only images and PDFs allowed.' })
+        if (!req.file) return sendError(res, 'No file uploaded or invalid file type. Only images and PDFs allowed.', 400)
         next()
     })
 }
 
 UploadRouter.post('/upload', singleUploadMiddleware, (req, res) => {
     let fileURL = req.fileDir + '/' + req.filename
-    res.send({ fileURL })
+    return sendSuccess(res, { fileURL })
 
 })
 
