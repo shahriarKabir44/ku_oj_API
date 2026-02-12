@@ -77,7 +77,8 @@ const ALLOWED_MIMETYPES = [
     'image/jpg',
     'image/gif',
     'image/webp',
-    'image/svg+xml'
+    'image/svg+xml',
+    'text/plain'
 ]
 
 function fileFilter(req, file, cb) {

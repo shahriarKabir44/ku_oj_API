@@ -16,7 +16,7 @@ ContestRouter.post('/createContest', validate(Joi.object().unknown(true)), valid
         .then(contestId => {
             return sendSuccess(res, { contestId })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 
@@ -25,15 +25,15 @@ ContestRouter.get('/getUpcomingContests', (req, res) => {
         .then(contests => {
             return sendSuccess(res, contests)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
-ContestRouter.get('/getFullContestDetails/:contestId', validate(Joi.object({ contestId: Joi.number().required() }), 'params'), (req, res) => {
-    ContestRepository.getFullContestDetails(req.params)
+ContestRouter.get('/getFullContestDetailsForEdit/:contestId', jwtValidator, (req, res) => {
+    ContestRepository.getFullContestDetailsForEdit(req.params, req.user)
         .then(fullContestDetails => {
             return sendSuccess(res, fullContestDetails)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.get('/getContests', (req, res) => {
@@ -41,14 +41,14 @@ ContestRouter.get('/getContests', (req, res) => {
         .then(contests => {
             return sendSuccess(res, contests)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 ContestRouter.post('/createProblem', validate(Joi.object().unknown(true)), validateJWT, (req, res) => {
-    ContestRepository.createProblem(req.body)
+    ContestRepository.createProblem(req.body, req.user)
         .then(problemId => {
             return sendSuccess(res, { problemId })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 
@@ -57,7 +57,7 @@ ContestRouter.get('/getContestProblems/:id', validate(Joi.object({ id: Joi.numbe
         .then(contestProblems => {
             return sendSuccess(res, { contestProblems })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 ContestRouter.get('/findContestById/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.findContestById(req.params)
@@ -65,7 +65,7 @@ ContestRouter.get('/findContestById/:id', validate(Joi.object({ id: Joi.number()
             ContestRepository.beginContest(contestInfo)
             return sendSuccess(res, { contestInfo })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.get('/getProblemInfo/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
@@ -73,7 +73,7 @@ ContestRouter.get('/getProblemInfo/:id', validate(Joi.object({ id: Joi.number().
         .then(problemInfo => {
             return sendSuccess(res, { problemInfo })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.get('/searchContestByProblem/:problemId', validate(Joi.object({ problemId: Joi.number().required() }), 'params'), (req, res) => {
@@ -81,7 +81,7 @@ ContestRouter.get('/searchContestByProblem/:problemId', validate(Joi.object({ pr
         .then(contest => {
             return sendSuccess(res, contest)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.get('/getContestResult/:contestantId/:contestId', validate(Joi.object({ contestantId: Joi.number().required(), contestId: Joi.number().required() }), 'params'), (req, res) => {
@@ -89,7 +89,7 @@ ContestRouter.get('/getContestResult/:contestantId/:contestId', validate(Joi.obj
         .then(contestResult => {
             return sendSuccess(res, contestResult)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.get('/hasSolvedProblem_/:userId/:problemId', validate(Joi.object({ userId: Joi.number().required(), problemId: Joi.number().required() }), 'params'), (req, res) => {
@@ -97,7 +97,7 @@ ContestRouter.get('/hasSolvedProblem_/:userId/:problemId', validate(Joi.object({
         .then(verdicts => {
             return sendSuccess(res, verdicts)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.post('/getContestStandings', (req, res) => {
@@ -105,18 +105,22 @@ ContestRouter.post('/getContestStandings', (req, res) => {
         .then(standings => {
             return sendSuccess(res, standings)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 
 ContestRouter.get('/getProblemFiles/:problemId', jwtValidator, async (req, res) => {
     try {
         let problem = await executeSqlAsync({
-            sql: `select * from problem where id=? and createById=?`,
-            values: [req.params.problemId, req.user.id]
-        })
+            sql: `select * from problem where id=?  `,
+            values: [req.params.problemId * 1]
+        });
+        problem = problem[0];
         if (problem == null) {
-            return sendError(res, 'Invalid Request!', 400)
+            return sendError(res, 'Invalid Request!')
+        }
+        if (!await ContestRepository.isAllowedToEditContest(problem.contestId, req.user.id)) {
+            return sendError(res, 'Access Denied!')
         }
         let testcase = await getFiles(`/testcases/${req.params.problemId}/in.txt`)
         let output = await getFiles(`/testcases/${req.params.problemId}/out.txt`)
@@ -124,7 +128,7 @@ ContestRouter.get('/getProblemFiles/:problemId', jwtValidator, async (req, res) 
         output = output.toString()
         return sendSuccess(res, { testcase, output })
     } catch (err) {
-        return sendError(res, err)
+        return sendError(res, err.message)
     }
 })
 
@@ -136,7 +140,7 @@ ContestRouter.post('/updateContestInfo', jwtValidator, (req, res) => {
             return sendSuccess(res, "")
         })
         .catch(err => {
-            return sendError(res, err)
+            return sendError(res, err.message)
         })
 })
 
@@ -146,7 +150,7 @@ ContestRouter.post('/updateProblemInfo', jwtValidator, (req, res) => {
             return sendSuccess(res, "")
         })
         .catch(err => {
-            return sendError(res, err)
+            return sendError(res, err.message)
         })
 })
 
@@ -155,14 +159,14 @@ ContestRouter.get('/getParticipatedContestList/:userId/:pageNumber', validate(Jo
         .then(participatedContestList => {
             return sendSuccess(res, participatedContestList)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 ContestRouter.get('/getProblems/:pageNumber', validate(Joi.object({ pageNumber: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getProblems(req.params)
         .then(problems => {
             return sendSuccess(res, problems)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 
@@ -171,7 +175,7 @@ ContestRouter.post('/saveMessageToContestThread', jwtValidator, (req, res) => {
         .then(() => {
             return sendSuccess(res, { data: 1 })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 ContestRouter.get('/getContestMessages/:contestId', validate(Joi.object({ contestId: Joi.number().required() }), 'params'), (req, res) => {
@@ -179,7 +183,7 @@ ContestRouter.get('/getContestMessages/:contestId', validate(Joi.object({ contes
         .then(messages => {
             return sendSuccess(res, messages)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 ContestRouter.get('/setStandings/:contestId', validate(Joi.object({ contestId: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.setStandings(req.params.contestId)
@@ -187,7 +191,7 @@ ContestRouter.get('/setStandings/:contestId', validate(Joi.object({ contestId: J
             return sendSuccess(res, { data: 1 })
 
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 module.exports = ContestRouter

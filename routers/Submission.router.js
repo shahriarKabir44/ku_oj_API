@@ -11,7 +11,7 @@ SubmissionRouter.post('/submit', (req, res) => {
             return sendSuccess(res, response)
         })
         .catch(response => {
-            return sendError(res, response)
+            return sendError(res, response.message)
         })
 })
 
@@ -20,7 +20,7 @@ SubmissionRouter.post('/getPreviousSubmissionsOfProblem', (req, res) => {
         .then(previousSubmissions => {
             return sendSuccess(res, { previousSubmissions })
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 
@@ -29,7 +29,7 @@ SubmissionRouter.post('/getSubmissionInfo', (req, res) => {
         .then(submissionInfo => {
             return sendSuccess(res, submissionInfo)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 
 })
 
@@ -38,7 +38,7 @@ SubmissionRouter.get('/getContestSubmissions/:contestId/:pageNumber', validate(J
         .then(submissions => {
             return sendSuccess(res, submissions)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 SubmissionRouter.get('/getUserSubmissions/:userId/:pageNumber', validate(Joi.object({ userId: Joi.number().required(), pageNumber: Joi.number().required() }), 'params'), (req, res) => {
@@ -46,7 +46,7 @@ SubmissionRouter.get('/getUserSubmissions/:userId/:pageNumber', validate(Joi.obj
         .then(submissions => {
             return sendSuccess(res, submissions)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 
 SubmissionRouter.get('/rejudgeContestSubmissions', (req, res) => {
@@ -56,6 +56,6 @@ SubmissionRouter.get('/rejudgeContestSubmissions', (req, res) => {
             return sendSuccess(res, { data: 1 })
 
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(res, err.message))
 })
 module.exports = SubmissionRouter

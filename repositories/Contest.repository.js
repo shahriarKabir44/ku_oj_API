@@ -1,4 +1,5 @@
 const { RedisClient } = require('../utils/RedisClient')
+const { beginTransaction } = require('../utils/dbConnection')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 
 const QueryBuilder = require('../utils/queryBuilder')
@@ -45,7 +46,7 @@ module.exports = class ContestRepository {
     }
     static async getProblems({ pageNumber }) {
         return executeSqlAsync({
-            sql: `select id,title,points,numSolutions,contestId,
+            sql: `select problem.id,problem.title,points,numSolutions,contestId,
                 contest. title  as contestTitle
             from problem
             inner join contest on contest.id = problem.contestId
@@ -211,7 +212,15 @@ module.exports = class ContestRepository {
         }
 
     }
-    static async createProblem({ contestId, title, points, code, createdOn }) {
+
+
+
+    static async createProblem({ contestId, title, points, code, createdOn }, user) {
+
+        if (!await this.isAllowedToEditContest(contestId, user.id)) {
+            throw new Error("Access Denied!")
+        }
+
         await executeSqlAsync({
             sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn"]),
             values: [contestId, title, points * 100, code, createdOn]
@@ -244,20 +253,33 @@ module.exports = class ContestRepository {
             values: [contestId]
         })
     }
-    static async getFullContestDetails({ contestId }) {
-        let data = {}
-        await Promise.all([
-            this.findContestById({ id: contestId })
-                .then((contestInfo) => {
-                    data = { ...data, ...contestInfo }
-                }),
-            executeSqlAsync({
-                sql: `select * from problem where contestId=?`,
-                values: [contestId]
-            }).then(problems => {
-                data = { ...data, problems }
-            })
-        ])
+
+    static async isAllowedToEditContest(contestId, userId, contest = null) {
+        contest = contest ?? await this.findContestById({ id: contestId })
+        if (!contest) {
+            throw new Error("Contest Not Found!")
+        }
+        if (contest.hostId == userId) return true
+        if (await this.isContributor(contestId, userId)) return true
+        return false
+    }
+
+    static async getFullContestDetailsForEdit({ contestId }, user) {
+        let data = {};
+        let contestInfo = await this.findContestById({ id: contestId })
+        if (!contestInfo) {
+            throw new Error("Contest Not Found!");
+        }
+        if (!await this.isAllowedToEditContest(contestId, user.id, contestInfo)) {
+            throw new Error("Access Denied!")
+        }
+        data = { ...data, ...contestInfo }
+        await executeSqlAsync({
+            sql: `select * from problem where contestId=?`,
+            values: [contestId]
+        }).then(problems => {
+            data = { ...data, problems }
+        });
         return data
     }
 
@@ -268,43 +290,69 @@ module.exports = class ContestRepository {
             throw new Error("Invalid Request!");
 
         }
-        await executeSqlAsync({
-            sql: QueryBuilder.createUpdateQuery('contest',
-                ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
-            values: [title, startTime, endTime, code, id]
-        })
-        this.findContestById({ id })
-            .then(_contest => {
-                RedisClient.store(`contest_${id}`, {
-                    ..._contest,
-                    'title': title,
-                    'startTime': startTime,
-                    'endTime': endTime,
-                    'code': code
+        if (!await this.isAllowedToEditContest(id, user.id, contest)) {
+            throw new Error("Access Denied!")
+        }
+        let transaction = await beginTransaction(process.env);
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.createUpdateQuery('contest',
+                    ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
+                values: [title, startTime, endTime, code, id]
+            }, transaction);
+            this.findContestById({ id })
+                .then(_contest => {
+                    RedisClient.store(`contest_${id}`, {
+                        ..._contest,
+                        'title': title,
+                        'startTime': startTime,
+                        'endTime': endTime,
+                        'code': code
+                    })
                 })
-            })
+        } catch (error) {
+            transaction.rollback();
+            throw new Error("Database Error!");
+        }
+        finally {
+            transaction.destroy();
+        }
+
 
     }
     static async updateProblemInfo({ id, title, code, points }, user) {
+        if (!await this.isAllowedToEditContest((await this.findProblemById(id))?.contestId ?? 0, user.id)) {
+            throw new Error("Access Denied!")
+        }
         let problem = await this.findProblemById(id);
-        if (!problem || problem.createById != user.id) {
+        if (!problem) {
             throw new Error("Invalid Request!");
         }
-        await executeSqlAsync({
-            sql: QueryBuilder.createUpdateQuery('problem',
-                ['title', 'code', 'points']) + ` where id=?;`,
-            values: [title, code, points, id]
-        })
-
-        RedisClient.queryCache(`problem_${id}`)
-            .then(_problem => {
-                RedisClient.store(`problem_${id}`, {
-                    ..._problem,
-                    'title': title,
-                    'points': points,
-                    'code': code
-                })
+        let transaction = await beginTransaction(process.env);
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.createUpdateQuery('problem',
+                    ['title', 'code', 'points']) + ` where id=?;`,
+                values: [title, code, points, id]
             })
+
+            RedisClient.queryCache(`problem_${id}`)
+                .then(_problem => {
+                    RedisClient.store(`problem_${id}`, {
+                        ..._problem,
+                        'title': title,
+                        'points': points,
+                        'code': code
+                    })
+                })
+
+        } catch (error) {
+            transaction.rollback();
+            throw new Error("Database Error!");
+        }
+        finally {
+            transaction.destroy();
+        }
 
     }
     static async getParticipatedContestList({ userId, pageNumber }) {
