@@ -1,15 +1,12 @@
 const jwt = require('jsonwebtoken')
-
+const { sendError } = require('./responseHelper')
 
 function jwtValidator(req, res, next) {
 
     validateJWT(req.headers['token'])
         .then(({ user }) => {
             if (!user) {
-                res.send({
-                    data: null,
-                    errorMsg: "Invalid User!"
-                })
+                return sendError(res, 'Invalid User!', 401)
             }
             else {
                 req.user = user;
