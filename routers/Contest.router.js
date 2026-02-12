@@ -5,7 +5,7 @@ const JudgeRepository = require('../repositories/Judge.repository')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
 const { validateJWT, jwtValidator } = require('../utils/validateJWT')
 const { sendSuccess, sendError } = require('../utils/responseHelper')
-const { validate } = require('../utils/validateRequest')
+const { validate } = require('../utils/validateReqest')
 const Joi = require('joi')
 
 const ContestRouter = require('express').Router()

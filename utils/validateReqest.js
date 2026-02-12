@@ -1,4 +1,3 @@
-const Joi = require('joi')
 const { sendError } = require('./responseHelper')
 
 function validate(schema, source = 'body') {

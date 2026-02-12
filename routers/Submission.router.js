@@ -1,10 +1,8 @@
 const SubmissionRouter = require('express').Router()
-const JudgeRepository = require('../repositories/Judge.repository')
 const SubmissionRepository = require('../repositories/Submission.repository')
 const { rejudgeAllSubmissionOfContest } = require('../repositories/contest_rejudge/RejudgeAllSubmissionOfContest')
-const { upload } = require('../utils/fileManager')
 const { sendSuccess, sendError } = require('../utils/responseHelper')
-const { validate } = require('../utils/validateRequest')
+const { validate } = require('../utils/validateReqest')
 const Joi = require('joi')
 
 SubmissionRouter.post('/submit', (req, res) => {

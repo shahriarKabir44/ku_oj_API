@@ -1,7 +1,7 @@
 const UserRepository = require('../repositories/User.repository')
 const { validateJWT } = require('../utils/validateJWT')
 const { sendSuccess, sendError } = require('../utils/responseHelper')
-const { validate } = require('../utils/validateRequest')
+const { validate } = require('../utils/validateReqest')
 const Joi = require('joi')
 
 const UserRouter = require('express').Router()
