@@ -54,6 +54,46 @@ module.exports = class ContestRepository {
 
         })
     }
+
+    static async isContributor(contestId, contributorId, isCheckActive = true) {
+        let isActiveContributor = RedisClient.queryCache(`contest_${contestId}_contributor_${contributorId}`)
+        if (isActiveContributor != null) {
+            return isActiveContributor == 1
+        }
+        let result = await executeSqlAsync({
+            sql: `select * from contestContributor where contestId=? and contributorId=? ${isCheckActive ? 'and isActive=1' : ''};`,
+            values: [contestId, contributorId]
+        })
+        if (result.length > 0 && result[0].isActive == 1) {
+            RedisClient.store(`contest_${contestId}_contributor_${contributorId}`, 1)
+        }
+        return result.length > 0
+    }
+
+    static async addContestContributor({ contestId, contributorId }, user) {
+        let contest = await this.findContestById({ id: contestId })
+        if (!contest || contest.hostId != user.id) {
+            throw new Error("Invalid Request!")
+        }
+
+        if (await this.isContributor(contestId, contributorId, false)) {
+            throw new Error("This user is already a contributor of this contest!");
+        }
+
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.insertQuery('contestContributor', ['contestId', 'contributorId', 'isActive', 'createDate']),
+                values: [contestId, contributorId, 0, new Date()]
+
+            });
+            return true
+            //no need to store in redis as the contributor will be inactive by default and will not be able to do any contribution until the host activates him/her. So we can check the contributor's status directly from the database when needed.
+        } catch (error) {
+            throw new Error("Database Error!");
+        }
+
+    }
+
     static async setStandings(contestId) {
         let contestResults = await executeSqlAsync({
             sql: `select * from contestResult where hasAttemptedOfficially=1 and contestId=? order by official_points desc ;`,
