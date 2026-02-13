@@ -1,17 +1,15 @@
 const { getFiles } = require('../executors/getFiles')
 const ContestRepository = require('../repositories/Contest.repository')
 const { ContestResult } = require('../repositories/ContestResult.class')
-const JudgeRepository = require('../repositories/Judge.repository')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
-const { validateJWT, jwtValidator } = require('../utils/validateJWT')
+const { jwtValidator } = require('../utils/validateJWT')
 const { sendSuccess, sendError } = require('../utils/responseHelper')
 const { validate } = require('../utils/validateReqest')
 const Joi = require('joi')
 
 const ContestRouter = require('express').Router()
-//ContestRouter.use(validateJWT)
 
-ContestRouter.post('/createContest', validate(Joi.object().unknown(true)), validateJWT, (req, res) => {
+ContestRouter.post('/createContest', validate(Joi.object().unknown(true)), jwtValidator, (req, res) => {
     ContestRepository.createContest(req.body)
         .then(contestId => {
             return sendSuccess(res, { contestId })
@@ -43,7 +41,7 @@ ContestRouter.get('/getContests', (req, res) => {
         })
         .catch(err => sendError(res, err.message))
 })
-ContestRouter.post('/createProblem', validate(Joi.object().unknown(true)), validateJWT, (req, res) => {
+ContestRouter.post('/createProblem', validate(Joi.object().unknown(true)), jwtValidator, (req, res) => {
     ContestRepository.createProblem(req.body, req.user)
         .then(problemId => {
             return sendSuccess(res, { problemId })
