@@ -56,6 +56,5 @@ function startExpress() {
     app.use('/submission', require('./routers/Submission.router'))
     app.use('/user', require('./routers/User.router'))
 
-
 }
 

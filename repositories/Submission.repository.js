@@ -81,7 +81,7 @@ module.exports = class SubmissionRepository {
 
     }
     static async createSubmission({ problemId, submittedBy, time, languageName, contestId, isOfficial }, httpRequest) {
-        var transaction = await beginTransaction(process.env);
+        let transaction = await beginTransaction(process.env);
         try {
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId', 'isOfficial']),
@@ -93,7 +93,7 @@ module.exports = class SubmissionRepository {
                     WHERE
                 problemId =? and submittedBy =?; `,
                 values: [problemId, submittedBy]
-            }, transaction);
+            });
 
 
             let [dbPath, relativePath] = getUploadFilePath(httpRequest);

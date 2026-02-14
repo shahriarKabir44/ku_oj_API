@@ -37,23 +37,34 @@ module.exports = class JudgeRepository {
     transaction = null;
     async judgeSubmission(transaction) {
         this.transaction = transaction
-        await this.getContestResult()
-        let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
-        if (data == null) {
+        try {
+            await this.getContestResult()
+            let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
+            if (data == null) {
+                return null;
+            }
+            this.verdictType = data.type
+            this.errorMessage = data.message
+            this.execTime = data.execTime
+            this.verdict = data.verdict
+            await this.setVerdict();
+            if (this.verdict == 'AC') {
+                if (! await this.setScoreWhenAccepted()) {
+                    return null;
+                }
+            }
+
+            else await this.setScoreWhenRejected();
+            return { ...data, id: this.submissionId }
+
+        } catch (error) {
             return null;
         }
-        this.verdictType = data.type
-        this.errorMessage = data.message
-        this.execTime = data.execTime
-        this.verdict = data.verdict
-        this.setVerdict()
-            .then(() => {
-                if (this.verdict == 'AC')
-                    this.setScoreWhenAccepted()
-                else this.setScoreWhenRejected()
-            })
 
-        return { ...data, id: this.submissionId }
+
+
+
+
 
     }
 
@@ -170,12 +181,20 @@ module.exports = class JudgeRepository {
     }
     async setScoreWhenAccepted() {
         if ((this.isOfficial && this.contestResult.official_description[this.problemId][0] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][0] == 1)) {
-            await executeSqlAsync({
-                sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
-                values: [this.problemId]
-            }, this.transaction)
+            try {
+                await executeSqlAsync({
+                    sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
+                    values: [this.problemId]
+                }, this.transaction);
 
-            await this.updateContestResult()
+                await this.updateContestResult();
+                return true;
+
+            } catch (error) {
+                console.log(error);
+                return false;
+            }
+
         }
     }
 
