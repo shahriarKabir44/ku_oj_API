@@ -1,3 +1,4 @@
+const e = require("express")
 const { getFiles } = require("../getFiles")
 const { executeInput } = require("./executeInput")
 /**
@@ -16,7 +17,6 @@ async function testOutput(processChild, problemId) {
             .then(data => expectedOutputs = data.split("\n").filter(d => d != ''))
 
     ])
-
     let outputs = []
     return new Promise((resolve, reject) => {
         executeInput(processChild, testInputs)
@@ -25,8 +25,7 @@ async function testOutput(processChild, problemId) {
                     resolve(output)
                 }
 
-                outputs.push(output.data)
-                output.data = output.data.filter(o => o != '')
+                output.data = output.data.filter(o => o != '');
                 if (output.data.length != expectedOutputs.length) {
                     reject({
                         result: false,

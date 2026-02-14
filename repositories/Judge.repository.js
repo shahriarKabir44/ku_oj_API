@@ -196,6 +196,7 @@ module.exports = class JudgeRepository {
             }
 
         }
+        return true;
     }
 
     async updateContestResult() {

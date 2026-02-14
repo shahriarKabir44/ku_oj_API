@@ -3,8 +3,12 @@ using namespace std;
 
 int main()
 {
-    int x, y;
-    cin >> x >> y;
-    cout << x - y;
+    string s;
+    cin >> s;
+    cin >> s;
+    cin >> s;
+    cin >> s;
+    cin >> s;
+    cout << "2 0.25 0 0" << endl;
     return 0;
 }
