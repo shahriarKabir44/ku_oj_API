@@ -18,7 +18,7 @@ SubmissionRouter.post('/submit', (req, res) => {
 SubmissionRouter.post('/getPreviousSubmissionsOfProblem', (req, res) => {
     SubmissionRepository.getPreviousSubmissionsOfProblem(req.body)
         .then(previousSubmissions => {
-            return sendSuccess(res, { previousSubmissions })
+            return sendSuccess(res, previousSubmissions)
         })
         .catch(err => sendError(res, err.message))
 })

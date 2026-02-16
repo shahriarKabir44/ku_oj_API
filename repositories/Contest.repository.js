@@ -1,10 +1,11 @@
+const { getFileDir } = require('../executors/getFiles')
 const { RedisClient } = require('../utils/RedisClient')
 const { beginTransaction } = require('../utils/dbConnection')
 const { executeSqlAsync } = require('../utils/executeSqlAsync')
-
+const path = require('path');
 const QueryBuilder = require('../utils/queryBuilder')
 const { ContestResult } = require('./ContestResult.class')
-
+const fs = require('fs');
 
 module.exports = class ContestRepository {
     static async beginContest(contest) {
@@ -284,22 +285,59 @@ module.exports = class ContestRepository {
     }
 
 
-    static async updateContestInfo({ id, title, startTime, endTime, code }, user) {
+    static async updateContestInfo({ id, title, startTime, endTime, code }, user, isForceUpdate = false) {
         let contest = await this.findContestById({ id });
         if (!contest || contest.hostId != user.id) {
             throw new Error("Invalid Request!");
 
         }
+        if (startTime > endTime) {
+            throw new Error("End time must be greater than start time!")
+        }
+
         if (!await this.isAllowedToEditContest(id, user.id, contest)) {
             throw new Error("Access Denied!")
         }
         let transaction = await beginTransaction(process.env);
         try {
+            let fieldToBeUpdated = ['title', 'code', 'endTime'];
+            let values = [title, code, new Date(endTime) * 1];
+
+            if (contest.startTime != startTime * 1 && !isForceUpdate) {
+                if (contest.startTime < (new Date()) * 1 && startTime * 1 > (new Date()) * 1 && !isForceUpdate) {
+                    throw new Error("Contest has already started. If you want to update the start time, please check the force update option.")
+                }
+            }
+
+            if (isForceUpdate && contest.startTime != startTime * 1) {
+                let submissionsMadeBeoreNewStartTime = await executeSqlAsync({
+                    sql: `select id,submissionFileURL as submissionCount from submission where contestId=? and time<?;`,
+                    values: [id, startTime]
+                });
+                if (submissionsMadeBeoreNewStartTime.length > 0) {
+                    // delete those submissions and files
+                    for (let submission of submissionsMadeBeoreNewStartTime) {
+                        await executeSqlAsync({
+                            sql: `delete from submission where id=?;`,
+                            values: [submission.id]
+                        }, transaction);
+                        let fileDir = path.join(getFileDir(), submission.submissionFileURL);
+
+                        fs.unlinkSync(fileDir);
+
+                    }
+                }
+                fieldToBeUpdated.push('startTime')
+                values.push(new Date(startTime) * 1)
+            }
             await executeSqlAsync({
                 sql: QueryBuilder.createUpdateQuery('contest',
-                    ['title', 'startTime', 'endTime', 'code']) + `where id=?;`,
-                values: [title, startTime, endTime, code, id]
+                    fieldToBeUpdated) + `where id=?;`,
+                values: [...values, id]
             }, transaction);
+            if (isForceUpdate) {
+                await RedisClient.flustAll();
+            }
             this.findContestById({ id })
                 .then(_contest => {
                     RedisClient.store(`contest_${id}`, {
@@ -312,7 +350,8 @@ module.exports = class ContestRepository {
                 })
         } catch (error) {
             transaction.rollback();
-            throw new Error("Database Error!");
+            console.log(error)
+            throw new Error(error.message || "Database Error!");
         }
         finally {
             transaction.destroy();
@@ -374,8 +413,7 @@ module.exports = class ContestRepository {
                     ) as contestTitle
                 from contestResult
                 where
-                    hasAttemptedOfficially = 1
-                    and contestantId = ?
+                      contestantId = ?
                     and (select status from contest where contest.id=contestResult.contestId)=2
                 order by participationTime  desc
                 limit ?, 10;`,

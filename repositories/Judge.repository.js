@@ -54,7 +54,8 @@ module.exports = class JudgeRepository {
                 }
             }
 
-            else await this.setScoreWhenRejected();
+            // else await this.setScoreWhenRejected();
+            await this.updateContestResult();
             return { ...data, id: this.submissionId }
 
         } catch (error) {
@@ -84,7 +85,10 @@ module.exports = class JudgeRepository {
                 _contestId: this.contestId,
                 _contestantId: this.userId
             })
+            this.contestResult.points = 0;
         }
+        this.contestResult.contestId = this.contestId
+        this.contestResult.contestantId = this.userId
 
         if (this.contestResult.official_description[this.problemId] == null) {
             this.contestResult.official_description[this.problemId] = [0, 0, 0]
@@ -157,7 +161,8 @@ module.exports = class JudgeRepository {
         }
         else {
             let contest = await this.findContestById()
-            let { startTime } = contest
+            let { startTime } = contest;
+            startTime = (new Date(startTime)) * 1;
             let timeDiff = Math.max(parseInt((this.time - startTime) / (3600 * 1000 * 10)), 0)
             let score = Math.max(this.points - timeDiff * 10, 10)
 
@@ -187,7 +192,7 @@ module.exports = class JudgeRepository {
                     values: [this.problemId]
                 }, this.transaction);
 
-                await this.updateContestResult();
+
                 return true;
 
             } catch (error) {

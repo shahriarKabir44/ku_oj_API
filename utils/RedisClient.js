@@ -6,8 +6,8 @@ class RedisClient {
         const client = redis.createClient({
             url: process.env.redisConString
         })
-        this.client = client
 
+        this.client = client
         client.connect()
 
 
@@ -37,6 +37,11 @@ class RedisClient {
                 resolve(res)
             })
         })
+    }
+
+    static async flustAll() {
+        this.client.flushAll();
+
     }
 }
 

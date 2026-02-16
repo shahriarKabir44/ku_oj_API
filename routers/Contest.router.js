@@ -53,7 +53,7 @@ ContestRouter.post('/createProblem', validate(Joi.object().unknown(true)), jwtVa
 ContestRouter.get('/getContestProblems/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getContestProblems(req.params)
         .then(contestProblems => {
-            return sendSuccess(res, { contestProblems })
+            return sendSuccess(res, contestProblems)
         })
         .catch(err => sendError(res, err.message))
 })
@@ -61,7 +61,7 @@ ContestRouter.get('/findContestById/:id', validate(Joi.object({ id: Joi.number()
     ContestRepository.findContestById(req.params)
         .then(contestInfo => {
             ContestRepository.beginContest(contestInfo)
-            return sendSuccess(res, { contestInfo })
+            return sendSuccess(res, contestInfo)
         })
         .catch(err => sendError(res, err.message))
 })
@@ -69,7 +69,7 @@ ContestRouter.get('/findContestById/:id', validate(Joi.object({ id: Joi.number()
 ContestRouter.get('/getProblemInfo/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
     ContestRepository.getProblemInfo(req.params)
         .then(problemInfo => {
-            return sendSuccess(res, { problemInfo })
+            return sendSuccess(res, problemInfo)
         })
         .catch(err => sendError(res, err.message))
 })
@@ -132,8 +132,8 @@ ContestRouter.get('/getProblemFiles/:problemId', jwtValidator, async (req, res) 
 
 
 ContestRouter.post('/updateContestInfo', jwtValidator, (req, res) => {
-
-    ContestRepository.updateContestInfo(req.body, req.user)
+    //console.log("startTime:", req.body.startTime, "p", new Date(req.body.startTime));
+    ContestRepository.updateContestInfo(req.body, req.user, req.query.isForceUpdate)
         .then(data => {
             return sendSuccess(res, "")
         })

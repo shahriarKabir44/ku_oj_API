@@ -78,7 +78,7 @@ class ContestResult {
                     'contestantId',
                     ...ContestResult.fields
                 ]),
-                values: [this.contestId, this.contestantId, this.points, JSON.stringify(this.description),
+                values: [this.contestId, this.contestantId, this.points ?? 0, JSON.stringify(this.description),
                 JSON.stringify(this.official_description), this.official_points,
                 JSON.stringify(this.officialVerdicts), JSON.stringify(this.verdicts), this.hasAttemptedOfficially, this.hasAttemptedUnofficially,
                 JSON.stringify(this.unofficial_ac_time), JSON.stringify(this.official_ac_time)]
