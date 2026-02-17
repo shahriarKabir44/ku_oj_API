@@ -12,7 +12,7 @@ const ContestRouter = require('express').Router()
 ContestRouter.post('/createContest', validate(Joi.object().unknown(true)), jwtValidator, (req, res) => {
     ContestRepository.createContest(req.body)
         .then(contestId => {
-            return sendSuccess(res, { contestId })
+            return sendSuccess(res, contestId)
         })
         .catch(err => sendError(res, err.message))
 })
@@ -44,7 +44,7 @@ ContestRouter.get('/getContests', (req, res) => {
 ContestRouter.post('/createProblem', validate(Joi.object().unknown(true)), jwtValidator, (req, res) => {
     ContestRepository.createProblem(req.body, req.user)
         .then(problemId => {
-            return sendSuccess(res, { problemId })
+            return sendSuccess(res, problemId)
         })
         .catch(err => sendError(res, err.message))
 })

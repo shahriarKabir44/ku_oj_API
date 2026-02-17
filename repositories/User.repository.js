@@ -9,6 +9,13 @@ module.exports = class UserRepository {
     }
     static async register({ userName, password }) {
         try {
+            if (await executeSqlAsync({
+                sql: `select * from user where userName=?`,
+                values: [userName]
+            })[0]) {
+                throw new Error("Username already taken!");
+
+            }
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('user', ['userName', 'password']),
                 values: [userName, password]
@@ -19,7 +26,7 @@ module.exports = class UserRepository {
             return { user, token }
 
         } catch (error) {
-            return null
+            throw new Error(error);
         }
     }
     static async findById({ id }) {

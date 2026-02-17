@@ -197,9 +197,16 @@ module.exports = class ContestRepository {
     }
     static async createContest({ title, startTime, endTime, hostId, code }) {
         try {
+            if (await executeSqlAsync({
+                sql: "select * from contest where title=?;"
+                , values: [title]
+            })[0]) {
+                throw new Error("Contest with the same name exists!");
+            }
+
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code', 'status']),
-                values: [title, startTime, endTime, hostId, code, 0]
+                values: [title, new Date(startTime) * 1, new Date(endTime) * 1, hostId, code, 0]
             })
             let [{ contestId }] = await executeSqlAsync({
                 sql: `select max(id) as contestId from contest where 
@@ -208,8 +215,8 @@ module.exports = class ContestRepository {
             })
             return contestId
         } catch (error) {
-            console.log(error)
-            return null
+            //console.log(error)
+            throw error;
         }
 
     }
