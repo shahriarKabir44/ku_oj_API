@@ -142,6 +142,17 @@ ContestRouter.post('/updateContestInfo', jwtValidator, (req, res) => {
         })
 })
 
+
+ContestRouter.get('/trashUntrashProblemId', jwtValidator, (req, res) => {
+    ContestRepository.trashUntrashProblemId(req.query, req.user)
+        .then(data => {
+            return sendSuccess(res, "")
+        })
+        .catch(err => {
+            return sendError(res, err.message)
+        })
+})
+
 ContestRouter.post('/updateProblemInfo', jwtValidator, (req, res) => {
     ContestRepository.updateProblemInfo(req.body, req.user)
         .then(data => {

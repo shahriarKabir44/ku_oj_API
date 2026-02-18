@@ -9,9 +9,14 @@ const { rejudgeProblemsSubmissions } = require("./RejudgeProblemsSubmissions");
 async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
     let problems = await executeSqlAsync({
         sql: `SELECT * from problem WHERE
-                    problem.contestId=? ${problemId ? 'and id=?' : ''};`,
+                    problem.contestId=? ${problemId * 1 ? 'and id=?' : ''} and isAvailable=1;`,
         values: problemId ? [contestId, problemId] : [contestId]
     });
+
+    if (!problems.length) {
+        throw new Error("No Problem found to rejudge!");
+    }
+
     let _contestResults = await executeSqlAsync({
         sql: `select * from contestResult where contestId=?`,
         values: [contestId]

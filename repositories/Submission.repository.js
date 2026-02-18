@@ -6,6 +6,7 @@ const fs = require('fs/promises');
 const { getUploadedFileName, getUploadFilePath } = require('../utils/fileManager');
 const JudgeRepository = require('./Judge.repository');
 const path = require('path');
+const ContestRepository = require('./Contest.repository');
 module.exports = class SubmissionRepository {
     static async getPreviousSubmissionsOfProblem({ problemId, userId }) {
         return executeSqlAsync({
@@ -83,6 +84,10 @@ module.exports = class SubmissionRepository {
     static async createSubmission({ problemId, submittedBy, time, languageName, contestId, isOfficial }, httpRequest) {
         let transaction = await beginTransaction(process.env);
         try {
+            let problem = await ContestRepository.findProblemById(problemId);
+            if (problem == null) {
+                throw new Error("Problem Not found/deleted!");
+            }
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId', 'isOfficial']),
                 values: [problemId, submittedBy, time, languageName, contestId, isOfficial]
@@ -147,19 +152,12 @@ module.exports = class SubmissionRepository {
                     language,
                     execTime,
                     submittedBy,
-                    problemId, (
-                        select title
-                        from problem
-                        where
-                            problem.id = submission.problemId
-                    ) as problemName,
-                    ( select userName
-                        from user
-                        where
-                            user.id = submission.submittedBy
-                    ) as author
+                    problemId, problem. problemName,
+                     user.userName as author
                 from submission
-                where contestId = ?
+                inner join problem on  problem.id = submission.problemId
+                inner join user on  user.id = submission.submittedBy
+                where contestId = ? and problem.isAvailable=1
                 order by time desc LIMIT ?,10;`,
             values: [contestId, pageNumber * 1]
         })
@@ -174,19 +172,13 @@ module.exports = class SubmissionRepository {
                     execTime,
                     submittedBy,
                     contestId,
-                    problemId, (
-                        select title
-                        from problem
-                        where
-                            problem.id = submission.problemId
-                    ) as problemName,
-                    ( select title
-                        from contest
-                        where
-                            contest.id = submission.contestId
-                    ) as contestTitle
+                    problemId,problem.title as problemName,
+                  contest. title  as contestTitle
                 from submission
-                where submittedBy = ?
+                inner join problem on  problem.id = submission.problemId
+                inner join contest on  contest.id =submission. contestId
+
+                where submittedBy = ? and problem.isAvailable=1 and isPublished=1
                 order by time desc LIMIT ?,10;`,
             values: [userId, pageNumber * 1]
         })

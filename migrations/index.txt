@@ -7,3 +7,4 @@
 1706300134589update-table_problem.js
 1770753953060update-table_problem.js
 1770756132474create-table_contestContributor.js
+1771436548729update-table_contest.js

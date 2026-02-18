@@ -4,6 +4,7 @@ const { ContestResult } = require('./ContestResult.class')
 const QueryBuilder = require("../utils/queryBuilder");
 const { executeCode } = require("../executors/executeCode");
 module.exports = class JudgeRepository {
+
     constructor({
         contestId,
         userId,
@@ -25,6 +26,7 @@ module.exports = class JudgeRepository {
         this.submissionFileURL = submissionFileURL
         this.points = points
         this.isOfficial = isOfficial
+        this.hasAcAlreadyExist = false;
         this.time = time
         this.ext = ext
         this.verdict = ""
@@ -102,17 +104,13 @@ module.exports = class JudgeRepository {
     async setVerdict() {
         this.isOfficial ? this.contestResult.hasAttemptedOfficially = 1 : this.contestResult.hasAttemptedUnofficially = 1
 
-        return Promise.all([
-            this.calculateScore(),
-            executeSqlAsync({
-                sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime', 'isOfficial', 'errorMessage'])}
+        await this.calculateScore()
+        await executeSqlAsync({
+            sql: `${QueryBuilder.createUpdateQuery('submission', ['verdict', 'execTime', 'isOfficial', 'errorMessage'])}
                  where id=?;`,
-                values: [this.verdict, this.execTime, this.isOfficial, this.errorMessage, this.submissionId]
-            }, this.transaction)
-        ])
-
-
-
+            values: [this.verdict, this.execTime, this.isOfficial, this.errorMessage, this.submissionId]
+        }, this.transaction);
+        return true;
     }
     async findContestById() {
 
@@ -147,7 +145,7 @@ module.exports = class JudgeRepository {
         this.updateContestResult()
     }
     async calculateScore() {
-        this.updateACandErrorCount()
+        await this.updateACandErrorCount()
         let contestResult = this.contestResult.clone()
         if (this.verdict != 'AC') {
             if (this.isOfficial) {
@@ -160,6 +158,9 @@ module.exports = class JudgeRepository {
             }
         }
         else {
+
+            if (this.hasAcAlreadyExist) return;
+
             let contest = await this.findContestById()
             let { startTime } = contest;
             startTime = (new Date(startTime)) * 1;
@@ -188,7 +189,9 @@ module.exports = class JudgeRepository {
         if ((this.isOfficial && this.contestResult.official_description[this.problemId][0] == 1) || (!this.isOfficial && this.contestResult.description[this.problemId][0] == 1)) {
             try {
                 await executeSqlAsync({
-                    sql: `update problem set numSolutions=numSolutions+1 where id=?;`,
+                    sql: `update problem set numSolutions= (select count(DISTINCT submittedBy) from submission
+                        where submission. problemId= problem.id and verdict='AC')
+                        where problem.id=?;`,
                     values: [this.problemId]
                 }, this.transaction);
 
@@ -196,7 +199,6 @@ module.exports = class JudgeRepository {
                 return true;
 
             } catch (error) {
-                console.log(error);
                 return false;
             }
 
@@ -212,7 +214,16 @@ module.exports = class JudgeRepository {
 
 
     }
-    updateACandErrorCount() {
+    async updateACandErrorCount() {
+        if (this.verdict == 'AC') {
+
+            let existingAcSubs = await executeSqlAsync({
+                sql: `select * from submission where id<>? and problemId=? and submittedBy=? and verdict='AC' and isOfficial=${this.isOfficial ? 1 : 0}`,
+                values: [this.submissionId, this.problemId, this.userId]
+            });
+            this.hasAcAlreadyExist = existingAcSubs.length > 0;
+        }
+
         if (this.isOfficial) {
             if (this.verdict != 'AC') {
                 this.contestResult.official_description[this.problemId][1] += 1
@@ -221,6 +232,7 @@ module.exports = class JudgeRepository {
                 }
             }
             else {
+                if (this.hasAcAlreadyExist) return
                 this.contestResult.official_description[this.problemId][0] += 1
                 this.contestResult.officialVerdicts[this.problemId] = 1
             }
@@ -233,6 +245,8 @@ module.exports = class JudgeRepository {
                 }
             }
             else {
+                if (this.hasAcAlreadyExist) return
+
                 this.contestResult.description[this.problemId][0] += 1
                 this.contestResult.verdicts[this.problemId] = 1
             }

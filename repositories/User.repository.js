@@ -58,9 +58,9 @@ module.exports = class UserRepository {
     }
     static async getUsersContestSubmissions({ contestId, userId, pageNumber }) {
         return executeSqlAsync({
-            sql: `select id,time,verdict,language, execTime,problemId, (select title from problem
-                where problem.id=submission.problemId
-                ) as problemName from submission where contestId=? and submittedBy=? order by time desc limit ?,10;`,
+            sql: `select id,time,verdict,language, execTime,problemId, problem.title as problemName from submission
+                inner join problem on  problem.id=submission.problemId
+                where contestId=? and submittedBy=? and problem.isAvailable=1 order by time desc limit ?,10;`,
             values: [contestId, userId, pageNumber]
         })
     }

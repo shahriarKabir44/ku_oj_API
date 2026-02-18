@@ -18,7 +18,7 @@ module.exports = class ContestRepository {
             values: [contest.id]
         })
         executeSqlAsync({
-            sql: `select * from problem where problem.contestId=?;`,
+            sql: `select * from problem where problem.contestId=? and isDeleted=0;`,
             values: [contest.id]
         }).then(problems => {
             problems.forEach(problem => {
@@ -172,7 +172,7 @@ module.exports = class ContestRepository {
         let _problem = await RedisClient.queryCache(`problem_${id}`)
         if (_problem != null) return _problem
         let [problemInfo] = await executeSqlAsync({
-            sql: `select * from problem where id=?`,
+            sql: `select * from problem where id=? and isAvailable=1`,
             values: [id]
         })
 
@@ -191,7 +191,7 @@ module.exports = class ContestRepository {
     static async getContestProblems({ id }) {
         return executeSqlAsync({
             sql: `SELECT * from problem WHERE
-                    problem.contestId=?;`,
+                    problem.contestId=? and isAvailable=1;`,
             values: [id]
         })
     }
@@ -291,6 +291,21 @@ module.exports = class ContestRepository {
         return data
     }
 
+    static async trashUntrashProblemId({ problemId, isAvailable }, user) {
+        let problem = await this.findProblemById(problemId);
+        if (problem == null) {
+            throw new Error("Invalid Problem!");
+        }
+        if (!await this.isAllowedToEditContest(problem.contestId, user.id)) {
+            throw new Error("Access Denied!");
+        }
+        await executeSqlAsync({
+            sql: `${QueryBuilder.createUpdateQuery('problem', ['isAvailable'])} where id=?`,
+            values: [isAvailable * 1, problemId]
+        });
+        await RedisClient.store(`problem_${id}`, problemInfo)
+
+    }
 
     static async updateContestInfo({ id, title, startTime, endTime, code }, user, isForceUpdate = false) {
         let contest = await this.findContestById({ id });
@@ -298,6 +313,8 @@ module.exports = class ContestRepository {
             throw new Error("Invalid Request!");
 
         }
+        startTime = new Date(startTime) * 1;
+        endTime = new Date(endTime) * 1;
         if (startTime > endTime) {
             throw new Error("End time must be greater than start time!")
         }
