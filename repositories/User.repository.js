@@ -4,13 +4,13 @@ const QueryBuilder = require('../utils/queryBuilder')
 const jwt = require('jsonwebtoken')
 module.exports = class UserRepository {
     static async findUser(param, value) {
-        let [user] = await executeSqlAsync({ sql: `select * from user where ${param}=?`, values: [value] })
+        let [user] = await executeSqlAsync({ sql: `select id,userName  from user where ${param}=?`, values: [value] })
         return user
     }
     static async register({ userName, password }) {
         try {
             if (await executeSqlAsync({
-                sql: `select * from user where userName=?`,
+                sql: `select id,userName from user where userName=?`,
                 values: [userName]
             })[0]) {
                 throw new Error("Username already taken!");
@@ -58,9 +58,9 @@ module.exports = class UserRepository {
     }
     static async getUsersContestSubmissions({ contestId, userId, pageNumber }) {
         return executeSqlAsync({
-            sql: `select id,time,verdict,language, execTime,problemId, problem.title as problemName from submission
+            sql: `select submission.id,time,verdict,language, execTime,problemId, problem.title as problemName from submission
                 inner join problem on  problem.id=submission.problemId
-                where contestId=? and submittedBy=? and problem.isAvailable=1 order by time desc limit ?,10;`,
+                where submission.contestId=? and submittedBy=? and problem.isAvailable=1 order by time desc limit ?,10;`,
             values: [contestId, userId, pageNumber]
         })
     }

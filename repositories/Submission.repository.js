@@ -146,18 +146,18 @@ module.exports = class SubmissionRepository {
     static async getContestSubmissions({ contestId, pageNumber }) {
         return executeSqlAsync({
             sql: `select
-                    id,
+                   submission. id,
                     time,
                     verdict,
                     language,
                     execTime,
                     submittedBy,
-                    problemId, problem. problemName,
+                   submission. problemId, problem.title as problemName,
                      user.userName as author
                 from submission
                 inner join problem on  problem.id = submission.problemId
                 inner join user on  user.id = submission.submittedBy
-                where contestId = ? and problem.isAvailable=1
+                where submission. contestId = ? and problem.isAvailable=1
                 order by time desc LIMIT ?,10;`,
             values: [contestId, pageNumber * 1]
         })
@@ -165,14 +165,14 @@ module.exports = class SubmissionRepository {
     static async getUserSubmissions({ userId, pageNumber }) {
         return executeSqlAsync({
             sql: `select
-                    id,
-                    time,
+                     submission.  id,
+                   submission.  time,
                     verdict,
-                    language,
+                   submission.  language,
                     execTime,
                     submittedBy,
-                    contestId,
-                    problemId,problem.title as problemName,
+                    submission.   contestId,
+                    submission.   problemId,problem.title as problemName,
                   contest. title  as contestTitle
                 from submission
                 inner join problem on  problem.id = submission.problemId

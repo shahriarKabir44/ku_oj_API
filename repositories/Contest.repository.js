@@ -127,9 +127,16 @@ module.exports = class ContestRepository {
     }
     static async findContestByProblemId(problemId) {
         let _contest = await RedisClient.queryCache(`problem_${problemId}_contest`)
-        if (_contest != null) return _contest
-        let problem = await this.findProblemById(problemId)
-        let contest = await this.findContestById({ id: problem.contestId })
+        if (_contest != null) return _contest;
+
+        let problem = await this.findProblemById(problemId, true);
+        if (problem == null) {
+            throw new Error("Invalid Problem!")
+        }
+        let contest = await this.findContestById({ id: problem.contestId });
+        if (contest == null) {
+            throw new Error("Invalid Contest!")
+        }
         RedisClient.store(`problem_${problemId}_contest`, contest)
         return contest
 
@@ -168,20 +175,25 @@ module.exports = class ContestRepository {
             values: [time, time, time]
         })
     }
-    static async findProblemById(id) {
+    static async findProblemById(id, isAvailableCheck) {
         let _problem = await RedisClient.queryCache(`problem_${id}`)
-        if (_problem != null) return _problem
+        if (_problem != null && ((isAvailableCheck && _problem.isAvailable) || !isAvailableCheck)) return _problem
         let [problemInfo] = await executeSqlAsync({
             sql: `select * from problem where id=? and isAvailable=1`,
             values: [id]
         })
-
+        if (problemInfo == null) {
+            return null;
+        }
         RedisClient.store(`problem_${id}`, problemInfo)
         return problemInfo
 
     }
     static async getProblemInfo({ id }) {
-        let problem = await this.findProblemById(id)
+        let problem = await this.findProblemById(id, true);
+        if (problem == null) {
+            throw new Error("Invalid Problem!");
+        }
         let contest = await this.findContestById({ id: problem.contestId })
         problem.contestName = contest.title
         problem.contestCode = contest.code
@@ -247,7 +259,10 @@ module.exports = class ContestRepository {
 
     static async searchContestByProblem({ problemId }) {
 
-        const problem = await this.findProblemById(problemId)
+        const problem = await this.findProblemById(problemId, true);
+        if (problem == null) {
+            throw new Error("Problem Not Found!");
+        }
         return await this.findContestById({ id: problem.contestId })
     }
 
@@ -303,7 +318,7 @@ module.exports = class ContestRepository {
             sql: `${QueryBuilder.createUpdateQuery('problem', ['isAvailable'])} where id=?`,
             values: [isAvailable * 1, problemId]
         });
-        await RedisClient.store(`problem_${id}`, problemInfo)
+        await RedisClient.store(`problem_${problemId}`, null)
 
     }
 
