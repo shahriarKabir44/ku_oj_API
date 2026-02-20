@@ -50,9 +50,11 @@ SubmissionRouter.get('/getUserSubmissions/:userId/:pageNumber', validate(Joi.obj
 })
 
 SubmissionRouter.get('/rejudgeContestSubmissions', (req, res) => {
-    console.log(req.query);
     rejudgeAllSubmissionOfContest(req.query)
         .then(data => {
+            if (data == null) {
+                return sendError(res, "Error Occured!")
+            }
             return sendSuccess(res, { data: 1 })
 
         })

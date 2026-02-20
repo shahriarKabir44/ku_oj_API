@@ -40,7 +40,7 @@ function startExpress() {
     const app = express()
 
     const PORT = process.env.PORT || 8080;
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
 
         initConnection(process.env)
         RedisClient.init()
@@ -55,6 +55,11 @@ function startExpress() {
     app.use('/contests', require('./routers/Contest.router'))
     app.use('/submission', require('./routers/Submission.router'))
     app.use('/user', require('./routers/User.router'))
-
+    // app.get('/', (req, res) => {
+    //     executeSqlAsync({ sql: 'select * from user' })
+    //         .then(data => {
+    //             res.send(data)
+    //         })
+    // })
 }
 

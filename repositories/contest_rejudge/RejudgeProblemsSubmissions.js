@@ -3,31 +3,28 @@ const { rejudgeUserSubmissions } = require("./RejudgeUserSubmissions")
 
 
 
-async function rejudgeProblemsSubmissions({ problem, contestId, contestResult }) {
+async function rejudgeProblemsSubmissions({ problem, contestId, contestResult }, transaction) {
     let submissions = await executeSqlAsync({
         sql: `select * from submission where submission.problemId=?  and submittedBy=? and submissionFileURL is not null;`,
         values: [problem.id, contestResult.contestantId]
-    });
+    }, transaction);
     if (!submissions.length) {
         return null
     }
-    let groups = groupSubmissionbyContestant(submissions)
-    let promises = []
-    groups.forEach(group => {
+    let groups = groupSubmissionbyContestant(submissions);
+    for (const group of groups) {
+
         contestResult.official_description[problem.id] = [0, 0, 0]
         contestResult.description[problem.id] = [0, 0, 0]
 
-        promises.push(rejudgeUserSubmissions({
+        await rejudgeUserSubmissions({
             submissions: group,
             problem,
             contestId,
             contestantId: group[0].submittedBy,
             contestResult
-        }).then(e => {
-        }))
-
-    })
-    await Promise.all(promises)
+        }, transaction)
+    }
     return contestResult
 
 }

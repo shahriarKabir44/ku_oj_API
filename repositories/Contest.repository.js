@@ -114,14 +114,15 @@ module.exports = class ContestRepository {
     }
     static async findContestById({ id }) {
 
-        let _contest = await RedisClient.queryCache(`contest_${id}`)
+        let _contest = await RedisClient.queryCache(`contest_${id}`);
+
         if (_contest != null)
             return _contest
 
         let [contest] = await executeSqlAsync({
             sql: `select * from contest where id=?;`,
             values: [id]
-        })
+        });
         RedisClient.store(`contest_${id}`, contest)
         return contest
     }
@@ -179,7 +180,7 @@ module.exports = class ContestRepository {
         let _problem = await RedisClient.queryCache(`problem_${id}`)
         if (_problem != null && ((isAvailableCheck && _problem.isAvailable) || !isAvailableCheck)) return _problem
         let [problemInfo] = await executeSqlAsync({
-            sql: `select * from problem where id=? and isAvailable=1`,
+            sql: `select * from problem where id=? ${isAvailableCheck ? 'and isAvailable=1' : ''}`,
             values: [id]
         })
         if (problemInfo == null) {
@@ -240,20 +241,29 @@ module.exports = class ContestRepository {
         if (!await this.isAllowedToEditContest(contestId, user.id)) {
             throw new Error("Access Denied!")
         }
-
-        await executeSqlAsync({
-            sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn"]),
-            values: [contestId, title, points * 100, code, createdOn]
-        })
-        let [{ newId }] = await executeSqlAsync({
-            sql: `select max(id) as newId from problem where 
+        let transaction = await beginTransaction(process.env, "READ COMMITTED");
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn", "isAvailable"]),
+                values: [contestId, title, points * 100, code, createdOn, 1]
+            }, transaction)
+            let [{ newId }] = await executeSqlAsync({
+                sql: `select max(id) as newId from problem where 
                   contestId=?;`,
-            values: [contestId]
-        })
+                values: [contestId]
+            }, transaction);
+            return newId
+
+        } catch (error) {
+            transaction.rollback();
+            throw new Error(error.message);
+        }
+        finally {
+            transaction.destroy();
+        }
 
 
 
-        return newId
     }
 
 

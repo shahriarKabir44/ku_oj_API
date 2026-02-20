@@ -46,7 +46,8 @@ module.exports = class UserRepository {
             user: null,
             token: null
         }
-        user.password = null
+        user.password = null;
+        console.log(user);
         let token = jwt.sign(user, process.env.jwtSecret)
         return { user, token }
     }
