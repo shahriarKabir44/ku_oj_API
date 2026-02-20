@@ -135,7 +135,7 @@ module.exports = class SubmissionRepository {
 
         } catch (error) {
             transaction.rollback();
-            return error;
+            throw error;
         }
         finally {
             transaction.destroy();

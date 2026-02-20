@@ -8,7 +8,13 @@ async function getFiles(dir) {
     })
 
 }
+function getTestcaseFileNames(relativeDir) {
+    let dir = __dirname + relativeDir;
+    if (!fs.existsSync(dir)) return null;
+    return fs.readdirSync(dir);
+}
+
 function getFileDir() {
     return __dirname
 }
-module.exports = { getFiles, getFileDir }
+module.exports = { getFiles, getFileDir, getTestcaseFileNames }

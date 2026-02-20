@@ -11,15 +11,12 @@ const { rejudgeProblemsSubmissions } = require("./RejudgeProblemsSubmissions");
 async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
     let transaction = await beginTransaction(process.env, "READ COMMITTED");
     try {
-        RedisClient.store(`locked_contest${contestId}`, true);
-        console.log(contestId);
 
         let problems = await executeSqlAsync({
             sql: `SELECT * from problem WHERE
                     problem.contestId=? ${problemId * 1 ? 'and id=?' : ''} and isAvailable=1;`,
             values: problemId ? [contestId, problemId] : [contestId]
         }, transaction);
-        console.log(problems);
         if (!problems.length) {
             throw new Error("No Problem found to rejudge!");
         }
@@ -32,6 +29,8 @@ async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
         let contestResults = _contestResults.map(contestResult => {
             return ContestResult.extractDataFromDB([contestResult])
         })
+        RedisClient.store(`locked_contest${contestId}`, true);
+
         for (let contestResult of contestResults) {
             let promises = []
             contestResult.official_description = {}
@@ -58,13 +57,11 @@ async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
             await contestResult.updateAndStore(transaction)
 
         }
-        console.log('committed');
         transaction.commit();
 
         await RedisClient.store(`locked_contest${contestId}`, false);
 
     } catch (error) {
-        console.log(error);
         await transaction.rollback();
         await RedisClient.store(`locked_contest${contestId}`, false);
 
@@ -72,7 +69,6 @@ async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
     finally {
         await RedisClient.store(`locked_contest${contestId}`, false);
 
-        console.log("end")
         await transaction.destroy();
     }
 

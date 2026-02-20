@@ -6,14 +6,14 @@ const { executeInput } = require("./executeInput")
 * @param {ChildProcessWithoutNullStreams} processChild 
 * @param {*} problemId 
 */
-async function testOutput(processChild, problemId) {
+async function testOutput(processChild, problemId, [input, output]) {
     let testInputs = ""
     let expectedOutputs = ""
     await Promise.all([
-        getFiles(`/testcases/${problemId}/in.txt`)
+        getFiles(input)
             .then(data => testInputs = data),
 
-        getFiles(`/testcases/${problemId}/out.txt`)
+        getFiles(output)
             .then(data => expectedOutputs = data.split("\n").filter(d => d != ''))
 
     ])

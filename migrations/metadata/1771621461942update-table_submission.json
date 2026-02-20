@@ -1,0 +1,1 @@
+{"case":"update","table":"submission","changes":{"addedColumns":[],"alteredColumns":[{"newName":"verdict"}],"deletedColumns":[],"addedForeignKeys":[],"deletedForeignKeys":[]}}

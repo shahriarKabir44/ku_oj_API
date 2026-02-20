@@ -42,34 +42,26 @@ module.exports = class JudgeRepository {
     transaction = null;
     async judgeSubmission(transaction) {
         this.transaction = transaction
-        try {
-            await this.getContestResult()
-            let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
-            if (data == null) {
-                return null;
-            }
-            this.verdictType = data.type
-            this.errorMessage = data.message
-            this.execTime = data.execTime
-            this.verdict = data.verdict
-            await this.setVerdict();
-            if (this.verdict == 'AC') {
-                if (! await this.setScoreWhenAccepted()) {
-                    return null;
-                }
-            }
-
-            // else await this.setScoreWhenRejected();
-            await this.updateContestResult();
-            return { ...data, id: this.submissionId }
-
-        } catch (error) {
+        await this.getContestResult()
+        let data = await executeCode({ problemId: this.problemId, submissionFileURL: this.path, language: this.languageName })
+        console.log(data)
+        if (data == null) {
             return null;
         }
+        this.verdictType = data.type
+        this.errorMessage = data.message
+        this.execTime = data.execTime
+        this.verdict = data.verdict
+        await this.setVerdict();
+        if (this.verdict == 'AC') {
+            if (! await this.setScoreWhenAccepted()) {
+                return null;
+            }
+        }
 
-
-
-
+        // else await this.setScoreWhenRejected();
+        await this.updateContestResult();
+        return { ...data, id: this.submissionId }
 
 
     }

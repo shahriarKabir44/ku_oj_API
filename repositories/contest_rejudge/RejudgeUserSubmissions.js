@@ -39,20 +39,23 @@ class UserSubmissionReEvaluator {
                 points: this.problem.points,
 
             })
-            await executeSqlAsync({
-                sql: `update problem set title='xxx' where id=25`
-            }, this.transaction);
+
             judgeRepository.transaction = this.transaction;
             judgeRepository.contestResult = this.contestResult
             judgeRepository.time = submission.time
-            let data = await executeCode(submission)
-            submission.verdict = data.verdict
-            if (data.verdict == 'AC') this.numSolutions++
-            submission.execTime = data.execTime
-            judgeRepository.verdictType = data.type
-            judgeRepository.execTime = data.execTime
-            judgeRepository.verdict = data.verdict
-            judgeRepository.errorMessage = data.message;
+            let executionOutput = null;
+            try {
+                executionOutput = await executeCode(submission)
+            } catch (error) {
+                continue;
+            }
+            submission.verdict = executionOutput.verdict
+            if (executionOutput.verdict == 'AC') this.numSolutions++
+            submission.execTime = executionOutput.execTime
+            judgeRepository.verdictType = executionOutput.type
+            judgeRepository.execTime = executionOutput.execTime
+            judgeRepository.verdict = executionOutput.verdict
+            judgeRepository.errorMessage = executionOutput.message;
 
             await judgeRepository.setVerdict();
         }
