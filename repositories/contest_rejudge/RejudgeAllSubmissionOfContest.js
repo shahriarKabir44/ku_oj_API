@@ -54,16 +54,17 @@ async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
             for (let problemId in contestResult.description) {
                 contestResult.points += contestResult.description[problemId][2]
             }
-            console.log("here2")
-            await contestResult.updateAndStore(transaction)
-            console.log("herex")
-        }
 
-        await transaction.commit();
-        console.log('committed')
+            await contestResult.updateAndStore(transaction)
+
+        }
+        console.log('committed');
+        transaction.commit();
+
         await RedisClient.store(`locked_contest${contestId}`, false);
 
     } catch (error) {
+        console.log(error);
         await transaction.rollback();
         await RedisClient.store(`locked_contest${contestId}`, false);
 

@@ -102,7 +102,7 @@ class ContestResult {
         let description = JSON.stringify(this.description)
         let officialVerdicts = JSON.stringify(this.officialVerdicts)
         let official_description = JSON.stringify(this.official_description)
-
+        console.log("abc")
         await executeSqlAsync({
             sql: QueryBuilder.createUpdateQuery('contestResult', ['points',
                 'description',
@@ -114,7 +114,9 @@ class ContestResult {
                 this.points, description, official_description, this.official_points, officialVerdicts, verdicts,
                 this.hasAttemptedUnofficially, this.hasAttemptedOfficially, JSON.stringify(this.official_ac_time), JSON.stringify(this.unofficial_ac_time), this.contestId, this.contestantId
             ]
-        }, transaction);
+        });
+        console.log("abc3")
+
         await this.storeInRedis();
 
     }
