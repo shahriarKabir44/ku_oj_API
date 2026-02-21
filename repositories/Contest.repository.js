@@ -18,7 +18,7 @@ module.exports = class ContestRepository {
             values: [contest.id]
         })
         executeSqlAsync({
-            sql: `select * from problem where problem.contestId=? and isDeleted=0;`,
+            sql: `select * from problem where problem.contestId=? and isAvailable=1;`,
             values: [contest.id]
         }).then(problems => {
             problems.forEach(problem => {
@@ -210,10 +210,10 @@ module.exports = class ContestRepository {
     }
     static async createContest({ title, startTime, endTime, hostId, code }) {
         try {
-            if (await executeSqlAsync({
+            if ((await executeSqlAsync({
                 sql: "select * from contest where title=?;"
                 , values: [title]
-            })[0]) {
+            }))[0]) {
                 throw new Error("Contest with the same name exists!");
             }
 
@@ -252,7 +252,9 @@ module.exports = class ContestRepository {
                   contestId=?;`,
                 values: [contestId]
             }, transaction);
-            return newId
+            transaction.commit();
+            return newId;
+
 
         } catch (error) {
             transaction.rollback();

@@ -98,7 +98,7 @@ module.exports = class SubmissionRepository {
                     WHERE
                 problemId =? and submittedBy =?; `,
                 values: [problemId, submittedBy]
-            });
+            }, transaction);
 
 
             let [dbPath, relativePath] = getUploadFilePath(httpRequest);
