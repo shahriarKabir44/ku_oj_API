@@ -6,6 +6,7 @@ const fs = require('fs/promises');
 const { getUploadedFileName, getUploadFilePath } = require('../utils/fileManager');
 const JudgeRepository = require('./Judge.repository');
 const path = require('path');
+const ContestRepository = require('./Contest.repository');
 module.exports = class SubmissionRepository {
     static async getPreviousSubmissionsOfProblem({ problemId, userId }) {
         return executeSqlAsync({
@@ -83,6 +84,10 @@ module.exports = class SubmissionRepository {
     static async createSubmission({ problemId, submittedBy, time, languageName, contestId, isOfficial }, httpRequest) {
         let transaction = await beginTransaction(process.env);
         try {
+            let problem = await ContestRepository.findProblemById(problemId);
+            if (problem == null) {
+                throw new Error("Problem Not found/deleted!");
+            }
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('submission', ['problemId', 'submittedBy', 'time', 'language', 'contestId', 'isOfficial']),
                 values: [problemId, submittedBy, time, languageName, contestId, isOfficial]
@@ -93,7 +98,7 @@ module.exports = class SubmissionRepository {
                     WHERE
                 problemId =? and submittedBy =?; `,
                 values: [problemId, submittedBy]
-            });
+            }, transaction);
 
 
             let [dbPath, relativePath] = getUploadFilePath(httpRequest);
@@ -130,7 +135,7 @@ module.exports = class SubmissionRepository {
 
         } catch (error) {
             transaction.rollback();
-            return error;
+            throw error;
         }
         finally {
             transaction.destroy();
@@ -141,25 +146,18 @@ module.exports = class SubmissionRepository {
     static async getContestSubmissions({ contestId, pageNumber }) {
         return executeSqlAsync({
             sql: `select
-                    id,
+                   submission. id,
                     time,
                     verdict,
                     language,
                     execTime,
                     submittedBy,
-                    problemId, (
-                        select title
-                        from problem
-                        where
-                            problem.id = submission.problemId
-                    ) as problemName,
-                    ( select userName
-                        from user
-                        where
-                            user.id = submission.submittedBy
-                    ) as author
+                   submission. problemId, problem.title as problemName,
+                     user.userName as author
                 from submission
-                where contestId = ?
+                inner join problem on  problem.id = submission.problemId
+                inner join user on  user.id = submission.submittedBy
+                where submission. contestId = ? and problem.isAvailable=1
                 order by time desc LIMIT ?,10;`,
             values: [contestId, pageNumber * 1]
         })
@@ -167,26 +165,20 @@ module.exports = class SubmissionRepository {
     static async getUserSubmissions({ userId, pageNumber }) {
         return executeSqlAsync({
             sql: `select
-                    id,
-                    time,
+                     submission.  id,
+                   submission.  time,
                     verdict,
-                    language,
+                   submission.  language,
                     execTime,
                     submittedBy,
-                    contestId,
-                    problemId, (
-                        select title
-                        from problem
-                        where
-                            problem.id = submission.problemId
-                    ) as problemName,
-                    ( select title
-                        from contest
-                        where
-                            contest.id = submission.contestId
-                    ) as contestTitle
+                    submission.   contestId,
+                    submission.   problemId,problem.title as problemName,
+                  contest. title  as contestTitle
                 from submission
-                where submittedBy = ?
+                inner join problem on  problem.id = submission.problemId
+                inner join contest on  contest.id =submission. contestId
+
+                where submittedBy = ? and problem.isAvailable=1 and isPublished=1
                 order by time desc LIMIT ?,10;`,
             values: [userId, pageNumber * 1]
         })

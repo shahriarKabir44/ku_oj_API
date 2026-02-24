@@ -4,16 +4,17 @@ const { executeCode } = require("../../executors/executeCode");
 const { executeSqlAsync } = require("../../utils/executeSqlAsync");
 
 
-async function rejudgeUserSubmissions({ submissions, problem, contestId, contestantId, contestResult }) {
-    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId, contestantId, contestResult)
+async function rejudgeUserSubmissions({ submissions, problem, contestId, contestantId, contestResult }, transaction) {
+    let userSubmissionReEvaluator = new UserSubmissionReEvaluator(submissions, problem, contestId, contestantId, contestResult, transaction)
     return userSubmissionReEvaluator.judgeSubmissions()
 
 }
 
 
 class UserSubmissionReEvaluator {
-    constructor(_submissions, _problem, _contestId, _contestantId, _contestResult) {
+    constructor(_submissions, _problem, _contestId, _contestantId, _contestResult, transaction) {
         this.submissions = _submissions
+        this.transaction = transaction;
         this.problem = _problem
         this.contestId = _contestId
         this.contestantId = _contestantId
@@ -21,7 +22,6 @@ class UserSubmissionReEvaluator {
     }
     async judgeSubmissions() {
         this.numSolutions = 0
-        let promises = []
 
         for (let n = 0; n < this.submissions.length; n++) {
             let submission = this.submissions[n]
@@ -36,28 +36,39 @@ class UserSubmissionReEvaluator {
                 userId: this.contestantId,
                 isOfficial: submission.isOfficial,
                 time: submission.time,
-                points: this.problem.points
+                points: this.problem.points,
+
             })
+
+            judgeRepository.transaction = this.transaction;
             judgeRepository.contestResult = this.contestResult
             judgeRepository.time = submission.time
-            let data = await executeCode(submission)
-            submission.verdict = data.verdict
-            if (data.verdict == 'AC') this.numSolutions++
-            submission.execTime = data.execTime
-            judgeRepository.verdictType = data.type
-            judgeRepository.execTime = data.execTime
-            judgeRepository.verdict = data.verdict
-            judgeRepository.errorMessage = data.message
-            await judgeRepository.setVerdict()
+            let executionOutput = null;
+            try {
+                executionOutput = await executeCode(submission)
+            } catch (error) {
+                continue;
+            }
+            submission.verdict = executionOutput.verdict
+            if (executionOutput.verdict == 'AC') this.numSolutions++
+            submission.execTime = executionOutput.execTime
+            judgeRepository.verdictType = executionOutput.type
+            judgeRepository.execTime = executionOutput.execTime
+            judgeRepository.verdict = executionOutput.verdict
+            judgeRepository.errorMessage = executionOutput.message;
+
+            await judgeRepository.setVerdict();
         }
-        executeSqlAsync({
-            sql: `update problem set numSolutions=? where id=?;`,
-            values: [this.numSolutions, this.problem.id]
-        })
-        await Promise.all([
-            this.processOfficialSubmissions(this.submissions.filter(submission => submission.isOfficial)),
-            this.processUnofficialSubmissions(this.submissions.filter(submission => !submission.isOfficial))
-        ])
+        await executeSqlAsync({
+            sql: `update problem set numSolutions= (select count(DISTINCT submittedBy) from submission
+                        where submission. problemId= problem.id and verdict='AC')
+                        where problem.id=?;`,
+            values: [this.problem.id]
+        }, this.transaction);
+
+        await this.processOfficialSubmissions(this.submissions.filter(submission => submission.isOfficial)),
+            await this.processUnofficialSubmissions(this.submissions.filter(submission => !submission.isOfficial))
+
         return this.contestResult
 
     }
@@ -70,6 +81,8 @@ class UserSubmissionReEvaluator {
         let rejectCounter = 0
         if (!submissions.length)
             return null
+
+        submissions.sort((a, b) => a.time - b.time)
         submissions.forEach(submission => {
             if (submission.verdict == 'AC') {
                 if (!oldestAcSubmission) {

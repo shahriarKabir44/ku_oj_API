@@ -18,7 +18,7 @@ module.exports = class ContestRepository {
             values: [contest.id]
         })
         executeSqlAsync({
-            sql: `select * from problem where problem.contestId=?;`,
+            sql: `select * from problem where problem.contestId=? and isAvailable=1;`,
             values: [contest.id]
         }).then(problems => {
             problems.forEach(problem => {
@@ -114,22 +114,30 @@ module.exports = class ContestRepository {
     }
     static async findContestById({ id }) {
 
-        let _contest = await RedisClient.queryCache(`contest_${id}`)
+        let _contest = await RedisClient.queryCache(`contest_${id}`);
+
         if (_contest != null)
             return _contest
 
         let [contest] = await executeSqlAsync({
             sql: `select * from contest where id=?;`,
             values: [id]
-        })
+        });
         RedisClient.store(`contest_${id}`, contest)
         return contest
     }
     static async findContestByProblemId(problemId) {
         let _contest = await RedisClient.queryCache(`problem_${problemId}_contest`)
-        if (_contest != null) return _contest
-        let problem = await this.findProblemById(problemId)
-        let contest = await this.findContestById({ id: problem.contestId })
+        if (_contest != null) return _contest;
+
+        let problem = await this.findProblemById(problemId, true);
+        if (problem == null) {
+            throw new Error("Invalid Problem!")
+        }
+        let contest = await this.findContestById({ id: problem.contestId });
+        if (contest == null) {
+            throw new Error("Invalid Contest!")
+        }
         RedisClient.store(`problem_${problemId}_contest`, contest)
         return contest
 
@@ -168,20 +176,25 @@ module.exports = class ContestRepository {
             values: [time, time, time]
         })
     }
-    static async findProblemById(id) {
+    static async findProblemById(id, isAvailableCheck) {
         let _problem = await RedisClient.queryCache(`problem_${id}`)
-        if (_problem != null) return _problem
+        if (_problem != null && ((isAvailableCheck && _problem.isAvailable) || !isAvailableCheck)) return _problem
         let [problemInfo] = await executeSqlAsync({
-            sql: `select * from problem where id=?`,
+            sql: `select * from problem where id=? ${isAvailableCheck ? 'and isAvailable=1' : ''}`,
             values: [id]
         })
-
+        if (problemInfo == null) {
+            return null;
+        }
         RedisClient.store(`problem_${id}`, problemInfo)
         return problemInfo
 
     }
     static async getProblemInfo({ id }) {
-        let problem = await this.findProblemById(id)
+        let problem = await this.findProblemById(id, true);
+        if (problem == null) {
+            throw new Error("Invalid Problem!");
+        }
         let contest = await this.findContestById({ id: problem.contestId })
         problem.contestName = contest.title
         problem.contestCode = contest.code
@@ -191,16 +204,16 @@ module.exports = class ContestRepository {
     static async getContestProblems({ id }) {
         return executeSqlAsync({
             sql: `SELECT * from problem WHERE
-                    problem.contestId=?;`,
+                    problem.contestId=? and isAvailable=1;`,
             values: [id]
         })
     }
     static async createContest({ title, startTime, endTime, hostId, code }) {
         try {
-            if (await executeSqlAsync({
+            if ((await executeSqlAsync({
                 sql: "select * from contest where title=?;"
                 , values: [title]
-            })[0]) {
+            }))[0]) {
                 throw new Error("Contest with the same name exists!");
             }
 
@@ -228,26 +241,40 @@ module.exports = class ContestRepository {
         if (!await this.isAllowedToEditContest(contestId, user.id)) {
             throw new Error("Access Denied!")
         }
-
-        await executeSqlAsync({
-            sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn"]),
-            values: [contestId, title, points * 100, code, createdOn]
-        })
-        let [{ newId }] = await executeSqlAsync({
-            sql: `select max(id) as newId from problem where 
+        let transaction = await beginTransaction(process.env, "READ COMMITTED");
+        try {
+            await executeSqlAsync({
+                sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn", "isAvailable"]),
+                values: [contestId, title, points * 100, code, createdOn, 1]
+            }, transaction)
+            let [{ newId }] = await executeSqlAsync({
+                sql: `select max(id) as newId from problem where 
                   contestId=?;`,
-            values: [contestId]
-        })
+                values: [contestId]
+            }, transaction);
+            transaction.commit();
+            return newId;
+
+
+        } catch (error) {
+            transaction.rollback();
+            throw new Error(error.message);
+        }
+        finally {
+            transaction.destroy();
+        }
 
 
 
-        return newId
     }
 
 
     static async searchContestByProblem({ problemId }) {
 
-        const problem = await this.findProblemById(problemId)
+        const problem = await this.findProblemById(problemId, true);
+        if (problem == null) {
+            throw new Error("Problem Not Found!");
+        }
         return await this.findContestById({ id: problem.contestId })
     }
 
@@ -291,6 +318,21 @@ module.exports = class ContestRepository {
         return data
     }
 
+    static async trashUntrashProblemId({ problemId, isAvailable }, user) {
+        let problem = await this.findProblemById(problemId);
+        if (problem == null) {
+            throw new Error("Invalid Problem!");
+        }
+        if (!await this.isAllowedToEditContest(problem.contestId, user.id)) {
+            throw new Error("Access Denied!");
+        }
+        await executeSqlAsync({
+            sql: `${QueryBuilder.createUpdateQuery('problem', ['isAvailable'])} where id=?`,
+            values: [isAvailable * 1, problemId]
+        });
+        await RedisClient.store(`problem_${problemId}`, null)
+
+    }
 
     static async updateContestInfo({ id, title, startTime, endTime, code }, user, isForceUpdate = false) {
         let contest = await this.findContestById({ id });
@@ -298,6 +340,8 @@ module.exports = class ContestRepository {
             throw new Error("Invalid Request!");
 
         }
+        startTime = new Date(startTime) * 1;
+        endTime = new Date(endTime) * 1;
         if (startTime > endTime) {
             throw new Error("End time must be greater than start time!")
         }

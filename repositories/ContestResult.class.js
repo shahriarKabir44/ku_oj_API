@@ -96,27 +96,29 @@ class ContestResult {
         return contestResult
 
     }
-    async updateAndStore() {
+    async updateAndStore(transaction = null) {
         let verdicts = JSON.stringify(this.verdicts)
 
         let description = JSON.stringify(this.description)
         let officialVerdicts = JSON.stringify(this.officialVerdicts)
         let official_description = JSON.stringify(this.official_description)
-        return Promise.all([
-            executeSqlAsync({
-                sql: QueryBuilder.createUpdateQuery('contestResult', ['points',
-                    'description',
-                    'official_description',
-                    'official_points', 'officialVerdicts', 'verdicts',
-                    'hasAttemptedUnofficially', 'hasAttemptedOfficially', 'official_ac_time', 'unofficial_ac_time']) + `
+        console.log("abc")
+        await executeSqlAsync({
+            sql: QueryBuilder.createUpdateQuery('contestResult', ['points',
+                'description',
+                'official_description',
+                'official_points', 'officialVerdicts', 'verdicts',
+                'hasAttemptedUnofficially', 'hasAttemptedOfficially', 'official_ac_time', 'unofficial_ac_time']) + `
                 where contestId=? and contestantId=?;`,
-                values: [
-                    this.points, description, official_description, this.official_points, officialVerdicts, verdicts,
-                    this.hasAttemptedUnofficially, this.hasAttemptedOfficially, JSON.stringify(this.official_ac_time), JSON.stringify(this.unofficial_ac_time), this.contestId, this.contestantId
-                ]
-            }),
-            this.storeInRedis()
-        ])
+            values: [
+                this.points, description, official_description, this.official_points, officialVerdicts, verdicts,
+                this.hasAttemptedUnofficially, this.hasAttemptedOfficially, JSON.stringify(this.official_ac_time), JSON.stringify(this.unofficial_ac_time), this.contestId, this.contestantId
+            ]
+        });
+        console.log("abc3")
+
+        await this.storeInRedis();
+
     }
     async storeInRedis() {
         const { hasAttemptedOfficially, hasAttemptedUnofficially, contestId, position, contestantId, points, official_points } = this

@@ -9,21 +9,13 @@ async function getFiles(dir) {
     })
 
 }
-
-function getTestFileNamesInDir(problemId) {
-    let relativePath = `/testcases/${problemId}`;
-    let dir = path.join(__dirname, relativePath);
-    if (!fs.existsSync(dir)) {
-        throw new Error("Path does not exist!");
-    }
-    let fileNames = fs.readdirSync(dir);
-    if (!fileNames.length) {
-        throw new Error("Path has no input files!");
-    }
-    return fileNames;
+function getTestcaseFileNames(relativeDir) {
+    let dir = __dirname + relativeDir;
+    if (!fs.existsSync(dir)) return null;
+    return fs.readdirSync(dir);
 }
 
 function getFileDir() {
     return __dirname
 }
-module.exports = { getFiles, getFileDir, getTestFileNamesInDir }
+module.exports = { getFiles, getFileDir, getTestcaseFileNames }

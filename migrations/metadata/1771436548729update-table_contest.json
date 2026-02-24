@@ -1,0 +1,1 @@
+{"case":"update","table":"contest","changes":{"addedColumns":[{"name":"isPublished","dataType":"int","defaultValue":"1","isNullable":true,"isPrimaryKey":false,"isAutoIncrement":false,"isUnique":false,"isDefaultValueSet":true}],"alteredColumns":[],"deletedColumns":[],"addedForeignKeys":[],"deletedForeignKeys":[]}}

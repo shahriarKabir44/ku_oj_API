@@ -24,7 +24,7 @@ UserRouter.post('/register', validate(registerSchema), (req, res) => {
         .catch(err => sendError(res, err.message))
 })
 
-UserRouter.post('/authenticate', validate(authSchema), (req, res) => {
+UserRouter.post('/authenticate', (req, res) => {
     UserRepository.authenticate(req.body)
         .then(data => {
             return sendSuccess(res, data)
