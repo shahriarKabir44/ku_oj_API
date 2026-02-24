@@ -1,6 +1,6 @@
 const { exec, spawn } = require("child_process");
 const { testOutput } = require("./utils/testOutput");
-async function runJava(problemId, filePath) {
+async function runJava(problemId, filePath, testcase) {
     return new Promise((resolve, reject) => {
         let tempPath = `${__dirname + filePath}`
         let compileProcess = spawn('javac', [tempPath])
@@ -17,7 +17,7 @@ async function runJava(problemId, filePath) {
         compileProcess.on('close', e => {
 
             const child = spawn('java', ['-cp', tempPath.replace('/Solution.java', ''), 'Solution']);
-            testOutput(child, problemId)
+            testOutput(child, problemId, testcase)
                 .then(data => {
                     resolve(data)
                 })

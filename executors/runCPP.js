@@ -1,7 +1,7 @@
 const { exec, spawn } = require("child_process");
 const fs = require('fs');
 const { testOutput } = require("./utils/testOutput");
-async function runCPP(problemId, filePath) {
+async function runCPP(problemId, filePath, testcase) {
     return new Promise((resolve, reject) => {
         let dir = (__dirname + filePath).replace('.cpp', '')
 
@@ -21,7 +21,7 @@ async function runCPP(problemId, filePath) {
                 return;
             }
             const child = spawn(__dirname + filePath.replace('.cpp', ''));
-            testOutput(child, problemId)
+            testOutput(child, problemId, testcase)
                 .then(data => {
                     resolve(data)
                 })
