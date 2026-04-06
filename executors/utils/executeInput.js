@@ -13,7 +13,7 @@ async function executeInput(processChild, args) {
             clearTimeout(processTimer)
             let begin = new Date()
             let errorMessage = ""
-            processChild.stdin.write(args);
+            processChild.stdin.write(args + "\n");
             processChild.stdin.end();
             let isExecutionCompleted = false
 
