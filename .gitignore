@@ -8,3 +8,4 @@
 .env.prod
 *.vs
 *.vscode
+/logs

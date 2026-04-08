@@ -6,7 +6,7 @@ function validate(schema, source = 'body') {
     const { error, value } = schema.validate(data, { abortEarly: false, stripUnknown: true })
     if (error) {
       const messages = error.details.map((d) => d.message)
-      return sendError(res, messages, 400)
+      return sendError(req, res, messages, 400)
     }
     if (source === 'body') req.body = value
     else if (source === 'params') req.params = value

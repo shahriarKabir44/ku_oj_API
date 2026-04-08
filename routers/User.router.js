@@ -21,7 +21,7 @@ UserRouter.post('/register', validate(registerSchema), (req, res) => {
         .then(data => {
             return sendSuccess(res, data)
         })
-        .catch(err => sendError(res, err.message))
+        .catch(err => sendError(req, res, err.message))
 })
 
 UserRouter.post('/authenticate', (req, res) => {
@@ -29,7 +29,7 @@ UserRouter.post('/authenticate', (req, res) => {
         .then(data => {
             return sendSuccess(res, data)
         })
-        .catch(err => sendError(res, err.message))
+        .catch(err => sendError(req, res, err.message))
 })
 
 UserRouter.get('/findUser/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
@@ -37,7 +37,7 @@ UserRouter.get('/findUser/:id', validate(Joi.object({ id: Joi.number().required(
         .then(user => {
             return sendSuccess(res, user)
         })
-        .catch(err => sendError(res, err))
+        .catch(err => sendError(req, res, err))
 })
 
 UserRouter.get('/getHostedContests/:id', validate(Joi.object({ id: Joi.number().required() }), 'params'), (req, res) => {
@@ -45,7 +45,7 @@ UserRouter.get('/getHostedContests/:id', validate(Joi.object({ id: Joi.number().
         .then(contests => {
             return sendSuccess(res, contests)
         })
-        .catch(err => sendError(res, err.message))
+        .catch(err => sendError(req, res, err.message))
 })
 
 UserRouter.post('/getUsersContestSubmissions', (req, res) => {
@@ -53,7 +53,7 @@ UserRouter.post('/getUsersContestSubmissions', (req, res) => {
         .then(contests => {
             return sendSuccess(res, contests)
         })
-        .catch(err => sendError(res, err.message))
+        .catch(err => sendError(req, res, err.message))
 })
 
 module.exports = UserRouter

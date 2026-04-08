@@ -2,7 +2,7 @@ const ContestRepository = require('../repositories/Contest.repository');
 const { ContestResult } = require('../repositories/ContestResult.class')
 const JudgeRepository = require('../repositories/Judge.repository')
 const { executeSqlAsync } = require('../utils/executeSqlAsync');
-const { sendSuccess } = require('../utils/responseHelper');
+const { sendSuccess, sendError } = require('../utils/responseHelper');
 const { jwtValidator } = require('../utils/validateJWT')
 
 const ContestContributorRouter = require('express').Router();
@@ -13,7 +13,7 @@ ContestContributorRouter.post('/addContestContributor', jwtValidator, (req, res)
             sendSuccess(res, null, null)
         })
         .catch(error => {
-            sendError(res, error.message)
+            sendError(req, res, error.message)
 
         })
 })

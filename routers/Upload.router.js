@@ -8,11 +8,11 @@ const { sendSuccess, sendError } = require('../utils/responseHelper')
 function singleUploadMiddleware(req, res, next) {
     upload.single('file')(req, res, (err) => {
         if (err) {
-            if (err instanceof multer.MulterError) return sendError(res, err.message, 400)
-            return sendError(res, 'File upload failed', 500)
+            if (err instanceof multer.MulterError) return sendError(req, res, err.message, 400)
+            return sendError(req, res, 'File upload failed', 500)
         }
         // if fileFilter rejected the file, multer doesn't set req.file
-        if (!req.file) return sendError(res, 'No file uploaded or invalid file type. Only images and PDFs allowed.', 400)
+        if (!req.file) return sendError(req, res, 'No file uploaded or invalid file type. Only images and PDFs allowed.', 400)
         next()
     })
 }

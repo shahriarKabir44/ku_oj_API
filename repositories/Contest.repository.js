@@ -168,6 +168,7 @@ module.exports = class ContestRepository {
     }
 
     static async getUpcomingContests() {
+        // throw new Error("oops!");
         let time = (new Date()) * 1
         return executeSqlAsync({
             sql: `SELECT id,startTime,endTime,title,hostId, 

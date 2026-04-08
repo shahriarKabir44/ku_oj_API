@@ -20,7 +20,7 @@ ContestRouter.post(
       .then((contestId) => {
         return sendSuccess(res, contestId);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -29,7 +29,7 @@ ContestRouter.get("/getUpcomingContests", (req, res) => {
     .then((contests) => {
       return sendSuccess(res, contests);
     })
-    .catch((err) => sendError(res, err.message));
+    .catch((err) => sendError(req, res, err.message));
 });
 
 ContestRouter.get(
@@ -40,7 +40,7 @@ ContestRouter.get(
       .then((fullContestDetails) => {
         return sendSuccess(res, fullContestDetails);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -49,7 +49,7 @@ ContestRouter.get("/getContests", (req, res) => {
     .then((contests) => {
       return sendSuccess(res, contests);
     })
-    .catch((err) => sendError(res, err.message));
+    .catch((err) => sendError(req, res, err.message));
 });
 ContestRouter.post(
   "/createProblem",
@@ -60,7 +60,7 @@ ContestRouter.post(
       .then((problemId) => {
         return sendSuccess(res, problemId);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -72,7 +72,7 @@ ContestRouter.get(
       .then((contestProblems) => {
         return sendSuccess(res, contestProblems);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 ContestRouter.get(
@@ -84,7 +84,7 @@ ContestRouter.get(
         ContestRepository.beginContest(contestInfo);
         return sendSuccess(res, contestInfo);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -96,7 +96,7 @@ ContestRouter.get(
       .then((problemInfo) => {
         return sendSuccess(res, problemInfo);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -108,7 +108,7 @@ ContestRouter.get(
       .then((contest) => {
         return sendSuccess(res, contest);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -126,7 +126,7 @@ ContestRouter.get(
       .then((contestResult) => {
         return sendSuccess(res, contestResult);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -144,7 +144,7 @@ ContestRouter.get(
       .then((verdicts) => {
         return sendSuccess(res, verdicts);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -153,7 +153,7 @@ ContestRouter.post("/getContestStandings", (req, res) => {
     .then((standings) => {
       return sendSuccess(res, standings);
     })
-    .catch((err) => sendError(res, err.message));
+    .catch((err) => sendError(req, res, err.message));
 });
 
 ContestRouter.get(
@@ -167,7 +167,7 @@ ContestRouter.get(
       });
       problem = problem[0];
       if (problem == null) {
-        return sendError(res, "Invalid Request!");
+        return sendError(req, res, "Invalid Request!");
       }
       if (
         !(await ContestRepository.isAllowedToEditContest(
@@ -175,7 +175,7 @@ ContestRouter.get(
           req.user.id,
         ))
       ) {
-        return sendError(res, "Access Denied!");
+        return sendError(req, res, "Access Denied!");
       }
       let testcaseDir = `/testcases/${req.params.problemId}/`;
       let fileNames = getTestcaseFileNames(testcaseDir);
@@ -192,15 +192,15 @@ ContestRouter.get(
         let output = "";
         try {
           input = (await getFiles(testcaseDir + inputFile)).toString();
-        } catch (e) {}
+        } catch (e) { }
         try {
           output = (await getFiles(testcaseDir + outputFile)).toString();
-        } catch (e) {}
+        } catch (e) { }
         testcases.push({ input, output });
       }
       return sendSuccess(res, { testcases });
     } catch (err) {
-      return sendError(res, err.message);
+      return sendError(req, res, err.message);
     }
   },
 );
@@ -215,14 +215,14 @@ ContestRouter.post(
         values: [req.params.problemId * 1],
       });
       problem = problem[0];
-      if (!problem) return sendError(res, "Invalid Request!");
+      if (!problem) return sendError(req, res, "Invalid Request!");
       if (
         !(await ContestRepository.isAllowedToEditContest(
           problem.contestId,
           req.user.id,
         ))
       ) {
-        return sendError(res, "Access Denied!");
+        return sendError(req, res, "Access Denied!");
       }
       let dir = path.join(
         __dirname,
@@ -237,7 +237,7 @@ ContestRouter.post(
       }
       return sendSuccess(res, "Cleared");
     } catch (err) {
-      return sendError(res, err.message);
+      return sendError(req, res, err.message);
     }
   },
 );
@@ -253,7 +253,7 @@ ContestRouter.post("/updateContestInfo", jwtValidator, (req, res) => {
       return sendSuccess(res, "");
     })
     .catch((err) => {
-      return sendError(res, err.message);
+      return sendError(req, res, err.message);
     });
 });
 
@@ -263,7 +263,7 @@ ContestRouter.get("/trashUntrashProblemId", jwtValidator, (req, res) => {
       return sendSuccess(res, "");
     })
     .catch((err) => {
-      return sendError(res, err.message);
+      return sendError(req, res, err.message);
     });
 });
 
@@ -273,7 +273,7 @@ ContestRouter.post("/updateProblemInfo", jwtValidator, (req, res) => {
       return sendSuccess(res, "");
     })
     .catch((err) => {
-      return sendError(res, err.message);
+      return sendError(req, res, err.message);
     });
 });
 
@@ -291,7 +291,7 @@ ContestRouter.get(
       .then((participatedContestList) => {
         return sendSuccess(res, participatedContestList);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 ContestRouter.get(
@@ -302,7 +302,7 @@ ContestRouter.get(
       .then((problems) => {
         return sendSuccess(res, problems);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 
@@ -311,7 +311,7 @@ ContestRouter.post("/saveMessageToContestThread", jwtValidator, (req, res) => {
     .then(() => {
       return sendSuccess(res, { data: 1 });
     })
-    .catch((err) => sendError(res, err.message));
+    .catch((err) => sendError(req, res, err.message));
 });
 
 ContestRouter.get(
@@ -322,7 +322,7 @@ ContestRouter.get(
       .then((messages) => {
         return sendSuccess(res, messages);
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 ContestRouter.get(
@@ -333,7 +333,7 @@ ContestRouter.get(
       .then(() => {
         return sendSuccess(res, { data: 1 });
       })
-      .catch((err) => sendError(res, err.message));
+      .catch((err) => sendError(req, res, err.message));
   },
 );
 

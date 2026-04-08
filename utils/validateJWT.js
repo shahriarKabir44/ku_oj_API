@@ -6,7 +6,7 @@ function jwtValidator(req, res, next) {
     validateJWT(req.headers['token'])
         .then(({ user }) => {
             if (!user) {
-                return sendError(res, 'Invalid User!', 401)
+                return sendError(req, res, 'Invalid User!', 401)
             }
             else {
                 req.user = user;
