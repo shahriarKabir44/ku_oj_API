@@ -23,3 +23,5 @@
 LICENSE
 README.md
 /executors/submissions/*
+/problemStatements/*
+/logs/*

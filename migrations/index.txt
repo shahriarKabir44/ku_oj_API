@@ -9,3 +9,4 @@
 1770756132474create-table_contestContributor.js
 1771436548729update-table_contest.js
 1771621461942update-table_submission.js
+1775924985694update-table_problem.js

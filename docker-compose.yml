@@ -58,6 +58,7 @@ services:
     volumes:
       - submissions:/executors/submissions
       - problemStatements:/problemStatements
+      - logs:/logs
 
   ku_oj_ws:
     image: shahriarkabir/ku_oj_ws:latest
@@ -67,8 +68,8 @@ services:
     image: shahriarkabir/ku_oj:latest
     environment:
       NODE_ENV: production
-      REACT_APP_SERVER_URL: http://192.168.0.104:880
-      REACT_APP_WS_URL: ws://192.168.0.104:881/
+      REACT_APP_SERVER_URL: http://localhost:880
+      REACT_APP_WS_URL: ws://localhost:881/
     ports:
       - 3400:3000
     depends_on:
@@ -81,3 +82,4 @@ volumes:
     driver: local
   submissions:
   problemStatements:
+  logs:

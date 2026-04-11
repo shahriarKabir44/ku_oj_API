@@ -217,6 +217,9 @@ module.exports = class ContestRepository {
             }))[0]) {
                 throw new Error("Contest with the same name exists!");
             }
+            if (new Date(startTime) * 1 > new Date(endTime) * 1) {
+                throw new Error("Start time must be smaller than end!")
+            }
 
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('contest', ['title', 'startTime', 'endTime', 'hostId', 'code', 'status']),
@@ -237,16 +240,19 @@ module.exports = class ContestRepository {
 
 
 
-    static async createProblem({ contestId, title, points, code, createdOn }, user) {
+    static async createProblem({ contestId, title, points, code, createdOn, statementText }, user) {
 
         if (!await this.isAllowedToEditContest(contestId, user.id)) {
             throw new Error("Access Denied!")
         }
+        if (! await this.isValidProblem({ id, title, code, points, statementText }, errorObj)) {
+            throw new Error(errorObj.errorMsg);
+        }
         let transaction = await beginTransaction(process.env, "READ COMMITTED");
         try {
             await executeSqlAsync({
-                sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn", "isAvailable"]),
-                values: [contestId, title, points * 100, code, createdOn, 1]
+                sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn", "isAvailable", 'statementText']),
+                values: [contestId, title, points * 100, code, createdOn, 1, statementText]
             }, transaction)
             let [{ newId }] = await executeSqlAsync({
                 sql: `select max(id) as newId from problem where 
@@ -399,7 +405,8 @@ module.exports = class ContestRepository {
                         'endTime': endTime,
                         'code': code
                     })
-                })
+                });
+            transaction.commit()
         } catch (error) {
             transaction.rollback();
             console.log(error)
@@ -411,21 +418,59 @@ module.exports = class ContestRepository {
 
 
     }
-    static async updateProblemInfo({ id, title, code, points }, user) {
+
+    static async isValidProblem(problem, errorObj) {
+        errorObj.errorMsg = "";
+        let errorMsg = errorObj.errorMsg;
+        if (!problem.code) {
+            errorMsg = "Invalid Code!";
+            return false;
+        }
+        if (!problem.title) {
+            errorMsg = "Invalid title!";
+            return false;
+        }
+        if (!(problem.points * 1)) {
+            errorMsg = "Invalid Points!";
+            return false;
+        }
+        if (problem.statementText.length < 5) {
+            errorMsg = "Invalid Problem Statement!";
+            return false;
+        }
+        let [existingProblem] = await executeSqlAsync({
+            sql: `select * from problem where code=? and id<>?;`,
+            values: [problem.code, problem.id]
+        });
+        if (existingProblem) {
+            errorMsg = "Another problem already exists with the same code!";
+            return false;
+        }
+
+        return true;
+
+    }
+
+    static async updateProblemInfo({ id, title, code, points, statementText }, user) {
         if (!await this.isAllowedToEditContest((await this.findProblemById(id))?.contestId ?? 0, user.id)) {
             throw new Error("Access Denied!")
         }
+
         let problem = await this.findProblemById(id);
         if (!problem) {
             throw new Error("Invalid Request!");
+        }
+        let errorObj = { errorMsg: "" };
+        if (! await this.isValidProblem({ id, title, code, points, statementText }, errorObj)) {
+            throw new Error(errorObj.errorMsg);
         }
         let transaction = await beginTransaction(process.env);
         try {
             await executeSqlAsync({
                 sql: QueryBuilder.createUpdateQuery('problem',
-                    ['title', 'code', 'points']) + ` where id=?;`,
-                values: [title, code, points, id]
-            })
+                    ['title', 'code', 'points', 'statementText']) + ` where id=?;`,
+                values: [title, code, points, statementText, id]
+            }, transaction)
 
             RedisClient.queryCache(`problem_${id}`)
                 .then(_problem => {
@@ -433,9 +478,11 @@ module.exports = class ContestRepository {
                         ..._problem,
                         'title': title,
                         'points': points,
-                        'code': code
+                        'code': code,
+                        statementText
                     })
-                })
+                });
+            transaction.commit();
 
         } catch (error) {
             transaction.rollback();

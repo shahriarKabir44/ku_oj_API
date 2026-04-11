@@ -21,7 +21,8 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'd0f88dbf-216e-11f1-91de-9666ae9cc5b7:1-42';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'adeca250-3501-11f1-8de8-6a9d5bd02634:1-28,
+d0f88dbf-216e-11f1-91de-9666ae9cc5b7:1-42';
 
 --
 -- Table structure for table `contest`
@@ -43,7 +44,7 @@ CREATE TABLE `contest` (
   UNIQUE KEY `title` (`title`),
   KEY `fk_contest_hostId` (`hostId`),
   CONSTRAINT `fk_contest_hostId` FOREIGN KEY (`hostId`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,10 +132,11 @@ CREATE TABLE `problem` (
   `createdOn` mediumtext,
   `isAvailable` int DEFAULT '0',
   `createById` int DEFAULT NULL,
+  `statementText` text,
   PRIMARY KEY (`id`),
   KEY `fk_problem_contestId` (`contestId`),
   CONSTRAINT `fk_problem_contestId` FOREIGN KEY (`contestId`) REFERENCES `contest` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -180,7 +182,7 @@ CREATE TABLE `user` (
   `photo` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `userName` (`userName`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -197,4 +199,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-06 21:08:23
+-- Dump completed on 2026-04-11 23:22:04

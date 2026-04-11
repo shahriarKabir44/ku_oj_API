@@ -198,7 +198,10 @@ ContestRouter.get(
         } catch (e) { }
         testcases.push({ input, output });
       }
-      return sendSuccess(res, { testcases });
+
+      let statementFileDir = path.join(__dirname, '..', 'problemStatements', problem.id + '.txt')
+      let statementFileContent = fs.readFileSync(statementFileDir).toString();
+      return sendSuccess(res, { testcases, statementFileContent });
     } catch (err) {
       return sendError(req, res, err.message);
     }
