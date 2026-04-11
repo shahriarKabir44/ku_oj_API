@@ -245,7 +245,7 @@ module.exports = class ContestRepository {
         if (!await this.isAllowedToEditContest(contestId, user.id)) {
             throw new Error("Access Denied!")
         }
-        if (! await this.isValidProblem({ id, title, code, points, statementText }, errorObj)) {
+        if (! await this.isValidProblem({ title, code, points, statementText }, errorObj)) {
             throw new Error(errorObj.errorMsg);
         }
         let transaction = await beginTransaction(process.env, "READ COMMITTED");
