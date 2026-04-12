@@ -245,6 +245,7 @@ module.exports = class ContestRepository {
         if (!await this.isAllowedToEditContest(contestId, user.id)) {
             throw new Error("Access Denied!")
         }
+        let errorObj = { errorMsg: "" }
         if (! await this.isValidProblem({ title, code, points, statementText }, errorObj)) {
             throw new Error(errorObj.errorMsg);
         }
