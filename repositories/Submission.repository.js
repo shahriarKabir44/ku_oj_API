@@ -22,9 +22,8 @@ module.exports = class SubmissionRepository {
         })
 
 
-        if (!contest) return {
-            success: false,
-            type: 1
+        if (!contest) {
+            throw new Error("Contest Not found!")
         }
         let [submission] = await executeSqlAsync({
             sql: `SELECT
@@ -58,10 +57,7 @@ module.exports = class SubmissionRepository {
             values: [submissionId]
         })
         if (!submission) {
-            return {
-                success: false,
-                type: 1
-            }
+            throw new Error("Submission Not found!")
         }
         submission.contest = contest
         if (submission.submittedBy == viewer || contest.endTime <= (new Date()) * 1 || contest.hostId == viewer) {
@@ -73,10 +69,7 @@ module.exports = class SubmissionRepository {
         }
         else {
             if (contest.endTime >= (new Date()) * 1) {
-                return {
-                    success: false,
-                    type: 2
-                }
+                throw new Error("You are not authorized to view this submission!");
             }
         }
 

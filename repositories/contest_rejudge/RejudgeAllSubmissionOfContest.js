@@ -16,7 +16,7 @@ async function rejudgeAllSubmissionOfContest({ contestId, problemId }) {
             sql: `SELECT * from problem WHERE
                     problem.contestId=? ${problemId * 1 ? 'and id=?' : ''} and isAvailable=1;`,
             values: problemId ? [contestId, problemId] : [contestId]
-        }, transaction);
+        });
         if (!problems.length) {
             throw new Error("No Problem found to rejudge!");
         }

@@ -190,18 +190,16 @@ ContestRouter.get(
         let outputFile = `out${outputSuffix}.txt`;
         let input = "";
         let output = "";
-        try {
-          input = (await getFiles(testcaseDir + inputFile)).toString();
-        } catch (e) { }
-        try {
-          output = (await getFiles(testcaseDir + outputFile)).toString();
-        } catch (e) { }
+
+        input = (await getFiles(testcaseDir + inputFile)).toString();
+
+
+        output = (await getFiles(testcaseDir + outputFile)).toString();
+
         testcases.push({ input, output });
       }
 
-      let statementFileDir = path.join(__dirname, '..', 'problemStatements', problem.id + '.txt')
-      let statementFileContent = fs.readFileSync(statementFileDir).toString();
-      return sendSuccess(res, { testcases, statementFileContent });
+      return sendSuccess(res, { testcases });
     } catch (err) {
       return sendError(req, res, err.message);
     }

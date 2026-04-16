@@ -1,7 +1,11 @@
 const fs = require('fs');
+const path = require('path');
 async function getFiles(dir) {
     return new Promise((resolve, reject) => {
-        fs.readFile(__dirname + dir, (err, data) => {
+        dir = dir.replaceAll('\\', '/');
+        let filePath = path.join(__dirname, dir);
+        console.log('getting file from path', filePath);
+        fs.readFile(filePath, (err, data) => {
             if (err) reject(err)
             if (data) resolve(data.toString('utf8'))
         })
@@ -9,7 +13,8 @@ async function getFiles(dir) {
 
 }
 function getTestcaseFileNames(relativeDir) {
-    let dir = __dirname + relativeDir;
+    relativeDir = relativeDir.replaceAll('\\', '/');
+    let dir = path.join(__dirname, relativeDir);
     if (!fs.existsSync(dir)) return null;
     return fs.readdirSync(dir);
 }

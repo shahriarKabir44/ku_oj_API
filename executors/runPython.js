@@ -6,6 +6,7 @@ const path = require("path");
 
 async function runPython(problemId, filePath, testcase) {
     // console.log(filePath);
+    filePath = filePath.replaceAll('\\', '/');
     let contentPath = path.join(__dirname, filePath);
     //let workDir = path.dirname(contentPath);
     // const dockerArgs = [
@@ -27,6 +28,7 @@ async function runPython(problemId, filePath, testcase) {
     //const child = spawn("docker", dockerArgs);
 
     child.on('error', (e) => {
+        console.log('Error executing Python code:', e);
         return null;
     })
     try {

@@ -246,10 +246,10 @@ module.exports = class ContestRepository {
             throw new Error("Access Denied!")
         }
         let errorObj = { errorMsg: "" }
-        if (! await this.isValidProblem({ title, code, points, statementText }, errorObj)) {
+        if (! await this.isValidProblem({ id: 0, title, code, points, statementText }, errorObj)) {
             throw new Error(errorObj.errorMsg);
         }
-        let transaction = await beginTransaction(process.env, "READ COMMITTED");
+        let transaction = await beginTransaction(process.env, "READ UNCOMMITTED");
         try {
             await executeSqlAsync({
                 sql: QueryBuilder.insertQuery('problem', ['contestId', 'title', 'points', 'code', "createdOn", "isAvailable", 'statementText']),
@@ -424,19 +424,19 @@ module.exports = class ContestRepository {
         errorObj.errorMsg = "";
         let errorMsg = errorObj.errorMsg;
         if (!problem.code) {
-            errorMsg = "Invalid Code!";
+            errorObj.errorMsg = "Invalid Code!";
             return false;
         }
         if (!problem.title) {
-            errorMsg = "Invalid title!";
+            errorObj.errorMsg = "Invalid title!";
             return false;
         }
         if (!(problem.points * 1)) {
-            errorMsg = "Invalid Points!";
+            errorObj.errorMsg = "Invalid Points!";
             return false;
         }
         if (problem.statementText.length < 5) {
-            errorMsg = "Invalid Problem Statement!";
+            errorObj.errorMsg = "Invalid Problem Statement!";
             return false;
         }
         let [existingProblem] = await executeSqlAsync({
@@ -444,7 +444,7 @@ module.exports = class ContestRepository {
             values: [problem.code, problem.id]
         });
         if (existingProblem) {
-            errorMsg = "Another problem already exists with the same code!";
+            errorObj.errorMsg = "Another problem already exists with the same code!";
             return false;
         }
 
